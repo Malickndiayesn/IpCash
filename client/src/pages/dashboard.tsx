@@ -36,36 +36,36 @@ export default function Dashboard() {
     );
   }
 
-  const userInitials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}` 
-    : user?.email?.[0]?.toUpperCase() || "U";
+  const userInitials = (user as any)?.firstName && (user as any)?.lastName 
+    ? `${(user as any).firstName[0]}${(user as any).lastName[0]}` 
+    : (user as any)?.email?.[0]?.toUpperCase() || "U";
 
   const mockTransactions = [
     {
       id: "1",
-      type: "incoming",
+      type: "incoming" as const,
       title: "Salaire mensuel",
       subtitle: "Aujourd'hui, 14:30",
       amount: "+75,000 FCFA",
-      status: "completed",
+      status: "completed" as const,
       icon: ArrowDown,
     },
     {
       id: "2", 
-      type: "payment",
+      type: "payment" as const,
       title: "Auchan Dakar",
       subtitle: "Hier, 18:45",
       amount: "-12,500 FCFA", 
-      status: "completed",
+      status: "completed" as const,
       icon: ShoppingCart,
     },
     {
       id: "3",
-      type: "mobile",
+      type: "mobile" as const,
       title: "Transfert Orange Money",
       subtitle: "Hier, 12:20", 
       amount: "-5,000 FCFA",
-      status: "completed",
+      status: "completed" as const,
       icon: Smartphone,
     }
   ];
@@ -82,7 +82,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-blue-100 text-sm">Bonjour,</p>
-                <h2 className="text-white font-semibold">{user?.firstName || 'Utilisateur'}</h2>
+                <h2 className="text-white font-semibold">{(user as any)?.firstName || 'Utilisateur'}</h2>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -100,7 +100,7 @@ export default function Dashboard() {
 
           {/* Balance Card */}
           <BalanceCard 
-            balance={dashboardData?.account?.balance || "125,430"}
+            balance={(dashboardData as any)?.account?.balance || "125,430"}
             currency="FCFA"
             monthlyGain="+5,250 FCFA"
             savingsProgress={75}

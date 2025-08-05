@@ -68,10 +68,10 @@ export default function Cards() {
     monthlyLimit: "500000.00",
   };
 
-  const cardData = cards?.[0] || mockCard;
-  const userFullName = user?.firstName && user?.lastName 
-    ? `${user.firstName.toUpperCase()} ${user.lastName.toUpperCase()}`
-    : user?.email?.toUpperCase() || "UTILISATEUR";
+  const cardData = (cards as any)?.[0] || mockCard;
+  const userFullName = (user as any)?.firstName && (user as any)?.lastName 
+    ? `${(user as any).firstName.toUpperCase()} ${(user as any).lastName.toUpperCase()}`
+    : (user as any)?.email?.toUpperCase() || "UTILISATEUR";
 
   const handleCardSettingChange = (setting: string, value: boolean) => {
     if (cardData.id === "mock-card-1") {

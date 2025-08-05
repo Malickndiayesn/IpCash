@@ -5,6 +5,8 @@ IPCASH is a modern Pan-African neobank mobile application built with React, Expr
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+User language: French - User prefers responses and interface in French.
+Application focus: Mobile banking for African markets (UEMOA region).
 
 # System Architecture
 

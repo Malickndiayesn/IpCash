@@ -119,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Account not found" });
       }
 
-      const currentBalance = parseFloat(fromAccount.balance);
+      const currentBalance = parseFloat(fromAccount.balance || '0');
       const transferAmount = parseFloat(transferData.amount);
       const fees = transferData.type === 'mobile_money' ? 150 : 0;
       const totalAmount = transferAmount + fees;

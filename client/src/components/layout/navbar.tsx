@@ -7,9 +7,9 @@ export function Navbar() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  const userInitials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}` 
-    : user?.email?.[0]?.toUpperCase() || "U";
+  const userInitials = (user as any)?.firstName && (user as any)?.lastName 
+    ? `${(user as any).firstName[0]}${(user as any).lastName[0]}` 
+    : (user as any)?.email?.[0]?.toUpperCase() || "U";
 
   return (
     <nav className="banking-gradient px-6 py-4 shadow-sm">

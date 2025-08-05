@@ -27,16 +27,16 @@ export default function Profile() {
     window.location.href = "/api/logout";
   };
 
-  const userInitials = user?.firstName && user?.lastName 
-    ? `${user.firstName[0]}${user.lastName[0]}` 
-    : user?.email?.[0]?.toUpperCase() || "U";
+  const userInitials = (user as any)?.firstName && (user as any)?.lastName 
+    ? `${(user as any).firstName[0]}${(user as any).lastName[0]}` 
+    : (user as any)?.email?.[0]?.toUpperCase() || "U";
 
-  const userFullName = user?.firstName && user?.lastName 
-    ? `${user.firstName} ${user.lastName}`
-    : user?.email || "Utilisateur";
+  const userFullName = (user as any)?.firstName && (user as any)?.lastName 
+    ? `${(user as any).firstName} ${(user as any).lastName}`
+    : (user as any)?.email || "Utilisateur";
 
-  const userPhone = user?.phone || "+221 77 123 45 67";
-  const userEmail = user?.email || "utilisateur@exemple.com";
+  const userPhone = (user as any)?.phone || "+221 77 123 45 67";
+  const userEmail = (user as any)?.email || "utilisateur@exemple.com";
 
   const menuSections = [
     {
