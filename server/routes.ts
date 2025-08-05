@@ -288,18 +288,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/exchange-rate/:from/:to', async (req, res) => {
     try {
       const { from, to } = req.params;
-      // Mock exchange rate calculation
-      const rates: Record<string, number> = {
-        'FCFA-USD': 0.00152,
-        'FCFA-EUR': 0.00152,
-        'FCFA-GBP': 0.00128,
-        'USD-FCFA': 655.957,
-        'EUR-FCFA': 655.957,
-        'GBP-FCFA': 780.123
+      
+      // Define all exchange rates explicitly
+      const exchangeRates: Record<string, number> = {
+        // USD conversions
+        'usd-id-fcfa-id': 655.957,    // 1 USD = 655.957 FCFA
+        'fcfa-id-usd-id': 0.001525,   // 1 FCFA = 0.001525 USD
+        
+        // EUR conversions  
+        'eur-id-fcfa-id': 655.957,    // 1 EUR = 655.957 FCFA
+        'fcfa-id-eur-id': 0.001525,   // 1 FCFA = 0.001525 EUR
+        
+        // GBP conversions
+        'gbp-id-fcfa-id': 780.123,    // 1 GBP = 780.123 FCFA
+        'fcfa-id-gbp-id': 0.001282,   // 1 FCFA = 0.001282 GBP
+        
+        // CAD conversions
+        'cad-id-fcfa-id': 485.67,     // 1 CAD = 485.67 FCFA
+        'fcfa-id-cad-id': 0.002059,   // 1 FCFA = 0.002059 CAD
+        
+        // CNY conversions
+        'cny-id-fcfa-id': 91.23,      // 1 CNY = 91.23 FCFA
+        'fcfa-id-cny-id': 0.010962,   // 1 FCFA = 0.010962 CNY
+        
+        // Cross currency rates
+        'usd-id-eur-id': 1.0,         // 1 USD = 1.0 EUR (same rate in this example)
+        'eur-id-usd-id': 1.0,         // 1 EUR = 1.0 USD
+        'usd-id-gbp-id': 0.841,       // 1 USD = 0.841 GBP
+        'gbp-id-usd-id': 1.189,       // 1 GBP = 1.189 USD
+        'usd-id-cad-id': 1.35,        // 1 USD = 1.35 CAD
+        'cad-id-usd-id': 0.741,       // 1 CAD = 0.741 USD
+        'usd-id-cny-id': 7.19,        // 1 USD = 7.19 CNY
+        'cny-id-usd-id': 0.139,       // 1 CNY = 0.139 USD
       };
       
-      const rate = rates[`${from}-${to}`] || 1;
-      res.json({ rate, from, to });
+      let rate = 1;
+      
+      if (from === to) {
+        rate = 1;
+      } else {
+        const rateKey = `${from}-${to}`;
+        rate = exchangeRates[rateKey];
+        if (!rate) {
+          rate = 1; // fallback if rate not found
+        }
+      }
+      
+      res.json({ rate: parseFloat(rate.toFixed(6)), from, to });
     } catch (error) {
       console.error("Error fetching exchange rate:", error);
       res.status(500).json({ message: "Failed to fetch exchange rate" });
@@ -308,14 +343,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/exchange-rates/all', async (req, res) => {
     try {
-      // Mock all exchange rates against FCFA
+      // All exchange rates against FCFA (1 unit = X FCFA)
       const rates = {
-        'usd-id': 655.957,
-        'eur-id': 655.957,
-        'gbp-id': 780.123,
-        'cad-id': 485.67,
-        'cny-id': 91.23,
-        'fcfa-id': 1
+        'usd-id': 655.957,    // 1 USD = 655.957 FCFA
+        'eur-id': 655.957,    // 1 EUR = 655.957 FCFA
+        'gbp-id': 780.123,    // 1 GBP = 780.123 FCFA
+        'cad-id': 485.67,     // 1 CAD = 485.67 FCFA 
+        'cny-id': 91.23,      // 1 CNY = 91.23 FCFA
+        'fcfa-id': 1          // 1 FCFA = 1 FCFA
       };
       res.json(rates);
     } catch (error) {
