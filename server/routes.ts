@@ -503,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/recharge', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
-      const { amount, method, description } = req.body;
+      const { amount, method, description, paymentGateway } = req.body;
       
       if (!amount || !method) {
         return res.status(400).json({ message: "Amount and method are required" });
@@ -520,34 +520,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User account not found" });
       }
 
+      // For payment gateway integration, we'll set status to pending initially
+      const status = paymentGateway ? "pending" : "completed";
+
       // Create deposit transaction
       const transactionData = {
         toAccountId: userAccount.id,
         type: "deposit" as const,
-        amount: amount,
+        amount: amount.toString(),
         description: description || "Recharge de compte",
         recipientType: "internal" as const,
-        status: "completed" as const, // Auto-complete for demo
-        metadata: { rechargeMethod: method }
+        status: status as const,
+        metadata: { 
+          rechargeMethod: method,
+          paymentGateway: paymentGateway || null,
+          processingFee: calculateProcessingFee(method, numericAmount)
+        }
       };
 
       const transaction = await storage.createTransaction(transactionData);
 
-      // Update account balance
-      const currentBalance = parseFloat(userAccount.balance || "0");
-      const newBalance = (currentBalance + numericAmount).toString();
-      await storage.updateAccountBalance(userAccount.id, newBalance);
+      // Only update balance immediately for non-gateway methods (mobile money, etc.)
+      if (!paymentGateway) {
+        const currentBalance = parseFloat(userAccount.balance || "0");
+        const newBalance = (currentBalance + numericAmount).toString();
+        await storage.updateAccountBalance(userAccount.id, newBalance);
+      }
 
       res.json({ 
         transaction,
-        message: "Recharge successful",
-        newBalance 
+        message: paymentGateway ? "Payment initiated" : "Recharge successful",
+        newBalance: !paymentGateway ? (parseFloat(userAccount.balance || "0") + numericAmount).toString() : userAccount.balance,
+        requiresPayment: !!paymentGateway
       });
     } catch (error) {
       console.error("Error processing recharge:", error);
       res.status(500).json({ message: "Failed to process recharge" });
     }
   });
+
+  // Helper function to calculate processing fees
+  function calculateProcessingFee(method: string, amount: number): string {
+    switch (method) {
+      case 'visa_card':
+      case 'stripe_card':
+        return (amount * 0.029 + 0.30).toFixed(2); // 2.9% + 30¢
+      case 'paypal':
+        return (amount * 0.034 + 0.35).toFixed(2); // 3.4% + 35¢
+      case 'bank_transfer':
+        return "500"; // Fixed fee
+      default:
+        return "0"; // Free for mobile money
+    }
+  }
 
   const httpServer = createServer(app);
   return httpServer;

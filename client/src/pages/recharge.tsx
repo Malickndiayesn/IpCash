@@ -171,115 +171,144 @@ export default function Recharge() {
 
   return (
     <div className="mobile-container">
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-100 p-4 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/dashboard")}
-              className="p-2"
+              className="p-2 hover:bg-gray-100 rounded-full"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} className="text-gray-700" />
             </Button>
-            <h1 className="text-xl font-semibold text-gray-900">Recharger mon compte</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Recharger mon compte
+            </h1>
             <div className="w-8" />
           </div>
         </div>
 
         <div className="p-4 space-y-6">
           {/* Current Balance */}
-          <Card className="bg-gradient-to-r from-blue-500 to-purple-500 border-none text-white">
-            <CardContent className="p-6">
+          <Card className="bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 border-none text-white shadow-2xl overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+            <CardContent className="p-6 relative z-10">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-sm">Solde actuel</p>
-                  <p className="text-2xl font-bold">
-                    {(dashboardData as any)?.account?.balance || "0"} FCFA
+                  <p className="text-blue-100 text-sm font-medium">Solde actuel</p>
+                  <p className="text-3xl font-bold mt-1">
+                    {parseInt((dashboardData as any)?.account?.balance || "0").toLocaleString()} FCFA
                   </p>
+                  <p className="text-blue-200 text-xs mt-1">Disponible immédiatement</p>
                 </div>
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                  <Plus size={24} />
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                  <Plus size={28} className="text-white" />
                 </div>
               </div>
             </CardContent>
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full"></div>
+            <div className="absolute -top-4 -left-4 w-16 h-16 bg-white/5 rounded-full"></div>
           </Card>
 
           {/* Recharge Amount */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Montant à recharger</CardTitle>
+          <Card className="bg-white/70 backdrop-blur-sm border-gray-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-gray-800 flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-500 rounded-lg flex items-center justify-center">
+                  <Banknote size={16} className="text-white" />
+                </div>
+                <span>Montant à recharger</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <Label htmlFor="amount">Montant (FCFA)</Label>
+                  <Label htmlFor="amount" className="text-gray-700 font-medium">Entrez le montant (FCFA)</Label>
                   <Input
                     id="amount"
                     type="number"
-                    placeholder="Ex: 25000"
+                    placeholder="Ex: 25 000"
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    className="text-lg"
+                    className="text-xl font-semibold h-14 mt-2 bg-white border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
                   />
                 </div>
                 
                 {/* Quick Amount Buttons */}
-                <div className="grid grid-cols-3 gap-2">
-                  {["5000", "10000", "25000", "50000", "100000", "250000"].map((amount) => (
-                    <Button
-                      key={amount}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, amount })}
-                      className="text-xs"
-                    >
-                      {parseInt(amount).toLocaleString()} FCFA
-                    </Button>
-                  ))}
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">Montants rapides</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {["5000", "10000", "25000", "50000", "100000", "250000"].map((amount) => (
+                      <Button
+                        key={amount}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, amount })}
+                        className="text-sm font-medium py-3 bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors"
+                      >
+                        {parseInt(amount).toLocaleString()}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Recharge Methods */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Méthode de recharge</CardTitle>
+          <Card className="bg-white/70 backdrop-blur-sm border-gray-200 shadow-lg">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-gray-800 flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-purple-500 rounded-lg flex items-center justify-center">
+                  <CreditCard size={16} className="text-white" />
+                </div>
+                <span>Choisissez votre méthode</span>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {rechargeMethods.map((method) => (
                   <div
                     key={method.id}
                     onClick={() => handleMethodSelect(method)}
-                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                    className={`p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 ${
                       selectedMethod?.id === method.id
-                        ? "border-primary bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg transform scale-[1.02]"
+                        : "border-gray-200 bg-white/80 hover:border-gray-300 hover:shadow-md hover:transform hover:scale-[1.01]"
                     }`}
                   >
                     <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        method.type === 'card' ? 'bg-blue-100' :
-                        method.type === 'mobile_money' ? 'bg-green-100' : 'bg-yellow-100'
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${
+                        method.type === 'card' 
+                          ? 'bg-gradient-to-br from-blue-400 to-blue-600' 
+                          : method.type === 'mobile_money' 
+                          ? 'bg-gradient-to-br from-green-400 to-green-600' 
+                          : 'bg-gradient-to-br from-yellow-400 to-orange-500'
                       }`}>
-                        <method.icon size={20} className={
-                          method.type === 'card' ? 'text-blue-600' :
-                          method.type === 'mobile_money' ? 'text-green-600' : 'text-yellow-600'
-                        } />
+                        <method.icon size={24} className="text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{method.name}</h4>
-                        <p className="text-sm text-gray-500">{method.description}</p>
-                        <div className="flex items-center space-x-4 mt-1">
-                          <span className="text-xs text-gray-500">Frais: {method.fees}</span>
-                          <span className="text-xs text-gray-500">• {method.processingTime}</span>
+                        <h4 className="font-bold text-gray-900 text-lg">{method.name}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{method.description}</p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            method.fees === 'Gratuit' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-orange-100 text-orange-700'
+                          }`}>
+                            Frais: {method.fees}
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                            {method.processingTime}
+                          </span>
                         </div>
                       </div>
                       {selectedMethod?.id === method.id && (
-                        <CheckCircle2 className="text-primary" size={20} />
+                        <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center">
+                          <CheckCircle2 className="text-white" size={18} />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -290,24 +319,37 @@ export default function Recharge() {
 
           {/* Summary */}
           {formData.amount && selectedMethod && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Récapitulatif</CardTitle>
+            <Card className="bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-blue-200 shadow-xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-gray-800 flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                    <AlertCircle size={16} className="text-white" />
+                  </div>
+                  <span>Récapitulatif de la transaction</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Montant</span>
-                    <span className="font-medium">{parseInt(formData.amount).toLocaleString()} FCFA</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700 font-medium">Montant à recharger</span>
+                    <span className="font-bold text-lg text-gray-900">{parseInt(formData.amount).toLocaleString()} FCFA</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Frais</span>
-                    <span className="font-medium">{parseInt(fees).toLocaleString()} FCFA</span>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700 font-medium">Frais de transaction</span>
+                    <span className={`font-bold text-lg ${fees === '0' ? 'text-green-600' : 'text-orange-600'}`}>
+                      {fees === '0' ? 'Gratuit' : `${parseInt(fees).toLocaleString()} FCFA`}
+                    </span>
                   </div>
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between">
-                      <span className="font-semibold">Total à débiter</span>
-                      <span className="font-semibold text-lg">{parseInt(totalAmount).toLocaleString()} FCFA</span>
+                  <div className="border-t-2 border-gray-200 pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-xl text-gray-900">Total à débiter</span>
+                      <span className="font-bold text-2xl text-blue-600">{parseInt(totalAmount).toLocaleString()} FCFA</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-100 rounded-xl">
+                    <div className="flex items-center space-x-2">
+                      <selectedMethod.icon size={20} className="text-blue-600" />
+                      <span className="text-blue-800 font-medium">via {selectedMethod.name}</span>
                     </div>
                   </div>
                 </div>
@@ -319,22 +361,49 @@ export default function Recharge() {
           <Button
             onClick={handleSubmit}
             disabled={!formData.amount || !formData.method || rechargeMutation.isPending}
-            className="w-full h-12 text-lg font-semibold"
+            className="w-full h-16 text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 rounded-2xl"
           >
-            {rechargeMutation.isPending ? "Traitement..." : "Confirmer la recharge"}
+            {rechargeMutation.isPending ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Traitement en cours...</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 size={20} />
+                <span>Confirmer la recharge</span>
+              </div>
+            )}
           </Button>
 
           {/* Security Notice */}
-          <Card className="bg-blue-50 border-blue-200">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="text-blue-600 mt-0.5" size={20} />
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 shadow-lg">
+            <CardContent className="p-5">
+              <div className="flex items-start space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="text-white" size={24} />
+                </div>
                 <div>
-                  <h4 className="font-medium text-blue-900">Sécurisé</h4>
-                  <p className="text-sm text-blue-700">
-                    Toutes les transactions sont sécurisées et chiffrées. 
-                    Vos données financières sont protégées.
+                  <h4 className="font-bold text-green-900 text-lg">Transaction 100% Sécurisée</h4>
+                  <p className="text-sm text-green-800 mt-2 leading-relaxed">
+                    Vos paiements sont protégés par un chiffrement de niveau bancaire. 
+                    Nous utilisons les dernières technologies de sécurité pour garantir 
+                    la protection de vos données financières.
                   </p>
+                  <div className="flex items-center space-x-4 mt-3 text-xs text-green-700">
+                    <span className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span>SSL 256-bit</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span>PCI DSS</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span>3D Secure</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
