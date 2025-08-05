@@ -203,6 +203,88 @@ export const supportMessages = pgTable("support_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Multi-currency accounts and international transfers
+export const currencies = pgTable("currencies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 3 }).notNull().unique(), // ISO 4217 currency codes (USD, EUR, GBP, etc.)
+  name: varchar("name").notNull(),
+  symbol: varchar("symbol").notNull(),
+  exchangeRate: decimal("exchange_rate", { precision: 15, scale: 6 }).notNull(), // Rate against FCFA
+  isActive: boolean("is_active").default(true),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const multiCurrencyAccounts = pgTable("multi_currency_accounts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  currencyId: varchar("currency_id").references(() => currencies.id).notNull(),
+  balance: decimal("balance", { precision: 15, scale: 2 }).default("0.00"),
+  accountNumber: varchar("account_number").notNull(),
+  isDefault: boolean("is_default").default(false),
+  status: varchar("status").default("active"), // 'active', 'frozen', 'closed'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const exchangeRateHistory = pgTable("exchange_rate_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  currencyId: varchar("currency_id").references(() => currencies.id).notNull(),
+  rate: decimal("rate", { precision: 15, scale: 6 }).notNull(),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const internationalTransfers = pgTable("international_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  fromAccountId: varchar("from_account_id").references(() => multiCurrencyAccounts.id),
+  toAccountId: varchar("to_account_id").references(() => multiCurrencyAccounts.id),
+  fromCurrencyId: varchar("from_currency_id").references(() => currencies.id).notNull(),
+  toCurrencyId: varchar("to_currency_id").references(() => currencies.id).notNull(),
+  fromAmount: decimal("from_amount", { precision: 15, scale: 2 }).notNull(),
+  toAmount: decimal("to_amount", { precision: 15, scale: 2 }).notNull(),
+  exchangeRate: decimal("exchange_rate", { precision: 15, scale: 6 }).notNull(),
+  fees: decimal("fees", { precision: 15, scale: 2 }).default("0.00"),
+  recipientName: varchar("recipient_name").notNull(),
+  recipientAccount: varchar("recipient_account").notNull(),
+  recipientBank: varchar("recipient_bank"),
+  recipientCountry: varchar("recipient_country").notNull(),
+  swiftCode: varchar("swift_code"),
+  purpose: varchar("purpose").notNull(),
+  reference: varchar("reference").notNull(),
+  status: varchar("status").default("pending"), // 'pending', 'processing', 'completed', 'failed', 'cancelled'
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const currencyExchanges = pgTable("currency_exchanges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  fromCurrencyId: varchar("from_currency_id").references(() => currencies.id).notNull(),
+  toCurrencyId: varchar("to_currency_id").references(() => currencies.id).notNull(),
+  fromAmount: decimal("from_amount", { precision: 15, scale: 2 }).notNull(),
+  toAmount: decimal("to_amount", { precision: 15, scale: 2 }).notNull(),
+  exchangeRate: decimal("exchange_rate", { precision: 15, scale: 6 }).notNull(),
+  fees: decimal("fees", { precision: 15, scale: 2 }).default("0.00"),
+  type: varchar("type").notNull(), // 'market', 'limit'
+  status: varchar("status").default("completed"), // 'pending', 'completed', 'failed'
+  executedAt: timestamp("executed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// International banking partners
+export const bankingPartners = pgTable("banking_partners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  country: varchar("country").notNull(),
+  countryCode: varchar("country_code", { length: 2 }).notNull(), // ISO 3166-1 alpha-2
+  swiftCode: varchar("swift_code"),
+  supportedCurrencies: jsonb("supported_currencies"), // Array of currency codes
+  transferFees: jsonb("transfer_fees"), // Fee structure by currency and amount
+  processingTime: varchar("processing_time"), // "1-3 business days"
+  isActive: boolean("is_active").default(true),
+  logoUrl: varchar("logo_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -265,6 +347,39 @@ export const insertSupportMessageSchema = createInsertSchema(supportMessages).om
   createdAt: true,
 });
 
+export const insertCurrencySchema = createInsertSchema(currencies).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export const insertMultiCurrencyAccountSchema = createInsertSchema(multiCurrencyAccounts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExchangeRateHistorySchema = createInsertSchema(exchangeRateHistory).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertInternationalTransferSchema = createInsertSchema(internationalTransfers).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+  reference: true,
+});
+
+export const insertCurrencyExchangeSchema = createInsertSchema(currencyExchanges).omit({
+  id: true,
+  createdAt: true,
+  executedAt: true,
+});
+
+export const insertBankingPartnerSchema = createInsertSchema(bankingPartners).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -290,3 +405,17 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
+
+// Currency and international transfer types
+export type Currency = typeof currencies.$inferSelect;
+export type InsertCurrency = z.infer<typeof insertCurrencySchema>;
+export type MultiCurrencyAccount = typeof multiCurrencyAccounts.$inferSelect;
+export type InsertMultiCurrencyAccount = z.infer<typeof insertMultiCurrencyAccountSchema>;
+export type ExchangeRateHistory = typeof exchangeRateHistory.$inferSelect;
+export type InsertExchangeRateHistory = z.infer<typeof insertExchangeRateHistorySchema>;
+export type InternationalTransfer = typeof internationalTransfers.$inferSelect;
+export type InsertInternationalTransfer = z.infer<typeof insertInternationalTransferSchema>;
+export type CurrencyExchange = typeof currencyExchanges.$inferSelect;
+export type InsertCurrencyExchange = z.infer<typeof insertCurrencyExchangeSchema>;
+export type BankingPartner = typeof bankingPartners.$inferSelect;
+export type InsertBankingPartner = z.infer<typeof insertBankingPartnerSchema>;

@@ -17,7 +17,8 @@ import {
   Smartphone,
   Target,
   Brain,
-  PiggyBank
+  PiggyBank,
+  Globe
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -148,13 +149,13 @@ export default function Dashboard() {
             
             <Button
               variant="ghost"
-              onClick={() => setLocation('/savings')}
-              className="flex flex-col items-center space-y-2 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 h-auto"
+              onClick={() => setLocation('/multi-currency')}
+              className="flex flex-col items-center space-y-2 p-4 bg-green-50 rounded-xl hover:bg-green-100 h-auto"
             >
-              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                <Target className="text-white" size={20} />
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <Globe className="text-white" size={20} />
               </div>
-              <span className="text-xs text-gray-700 font-medium text-center">Épargne</span>
+              <span className="text-xs text-gray-700 font-medium text-center">Multi-devises</span>
             </Button>
           </div>
 

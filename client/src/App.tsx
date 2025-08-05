@@ -16,6 +16,9 @@ import Savings from "@/pages/savings";
 import Credit from "@/pages/credit";
 import Support from "@/pages/support";
 import KYC from "@/pages/kyc";
+import InternationalTransfer from "@/pages/international-transfer";
+import CurrencyExchange from "@/pages/currency-exchange";
+import MultiCurrency from "@/pages/multi-currency";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -36,6 +39,9 @@ function Router() {
           <Route path="/credit" component={Credit} />
           <Route path="/support" component={Support} />
           <Route path="/kyc" component={KYC} />
+          <Route path="/international-transfer" component={InternationalTransfer} />
+          <Route path="/currency-exchange" component={CurrencyExchange} />
+          <Route path="/multi-currency" component={MultiCurrency} />
         </>
       )}
       <Route component={NotFound} />

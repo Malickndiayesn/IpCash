@@ -1,6 +1,6 @@
 # Overview
 
-IPCASH is a modern Pan-African neobank mobile application built with React, Express.js, and PostgreSQL. The application provides comprehensive digital banking services including peer-to-peer transfers, mobile money integration, virtual card management, and transaction tracking. Designed with a mobile-first approach, it targets African markets with support for local payment methods like Orange Money and Wave.
+IPCASH is a comprehensive Pan-African neobank mobile application built with React, Express.js, and PostgreSQL. The application provides full digital banking services including peer-to-peer transfers, mobile money integration, virtual card management, transaction tracking, AI-powered financial analytics, automated savings, intelligent credit scoring, and international banking capabilities. Designed with a mobile-first approach, it targets African markets with support for local payment methods while offering global financial services including multi-currency accounts, international transfers, and currency exchange.
 
 # User Preferences
 
@@ -29,8 +29,9 @@ Application focus: Mobile banking for African markets (UEMOA region).
 ## Database Design
 - **Primary Database**: PostgreSQL with Neon serverless connection
 - **Schema Management**: Drizzle migrations with schema versioning
-- **Key Entities**: Users, Accounts, Transactions, Cards, Mobile Money Accounts, Contacts
+- **Key Entities**: Users, Accounts, Transactions, Cards, Mobile Money Accounts, Contacts, KYC Documents, Savings Goals, Credit Scores, Loan Requests, Financial Insights, Support Tickets, Currencies, Multi-Currency Accounts, International Transfers, Currency Exchanges, Banking Partners
 - **Session Storage**: Dedicated sessions table for authentication state
+- **Advanced Features**: Multi-currency support, international banking, AI analytics, automated savings, credit scoring
 
 ## Authentication & Authorization
 - **Provider**: Replit Auth using OpenID Connect protocol
@@ -57,6 +58,9 @@ Application focus: Mobile banking for African markets (UEMOA region).
 ## Payment Integrations
 - **Mobile Money**: Support for Orange Money and Wave payment providers
 - **Card Services**: Virtual card creation and management capabilities
+- **International Banking**: SWIFT-enabled transfers to global banking partners
+- **Currency Exchange**: Real-time exchange rates with multi-currency support
+- **Banking Partners**: Integration with Wells Fargo, HSBC, BNP Paribas, Deutsche Bank
 
 ## UI & Design System
 - **Radix UI**: Headless component primitives for accessibility

@@ -266,6 +266,204 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Currency and international transfer routes
+  app.get('/api/currencies', async (req, res) => {
+    try {
+      // Mock currency data for now
+      const currencies = [
+        { id: 'fcfa-id', code: 'FCFA', name: 'Franc CFA', symbol: 'F', exchangeRate: 1, isActive: true },
+        { id: 'usd-id', code: 'USD', name: 'US Dollar', symbol: '$', exchangeRate: 655.957, isActive: true },
+        { id: 'eur-id', code: 'EUR', name: 'Euro', symbol: '€', exchangeRate: 655.957, isActive: true },
+        { id: 'gbp-id', code: 'GBP', name: 'British Pound', symbol: '£', exchangeRate: 780.123, isActive: true },
+        { id: 'cad-id', code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', exchangeRate: 485.67, isActive: true },
+        { id: 'cny-id', code: 'CNY', name: 'Chinese Yuan', symbol: '¥', exchangeRate: 91.23, isActive: true }
+      ];
+      res.json(currencies);
+    } catch (error) {
+      console.error("Error fetching currencies:", error);
+      res.status(500).json({ message: "Failed to fetch currencies" });
+    }
+  });
+
+  app.get('/api/exchange-rate/:from/:to', async (req, res) => {
+    try {
+      const { from, to } = req.params;
+      // Mock exchange rate calculation
+      const rates: Record<string, number> = {
+        'FCFA-USD': 0.00152,
+        'FCFA-EUR': 0.00152,
+        'FCFA-GBP': 0.00128,
+        'USD-FCFA': 655.957,
+        'EUR-FCFA': 655.957,
+        'GBP-FCFA': 780.123
+      };
+      
+      const rate = rates[`${from}-${to}`] || 1;
+      res.json({ rate, from, to });
+    } catch (error) {
+      console.error("Error fetching exchange rate:", error);
+      res.status(500).json({ message: "Failed to fetch exchange rate" });
+    }
+  });
+
+  app.get('/api/exchange-rates/all', async (req, res) => {
+    try {
+      // Mock all exchange rates against FCFA
+      const rates = {
+        'usd-id': 655.957,
+        'eur-id': 655.957,
+        'gbp-id': 780.123,
+        'cad-id': 485.67,
+        'cny-id': 91.23,
+        'fcfa-id': 1
+      };
+      res.json(rates);
+    } catch (error) {
+      console.error("Error fetching exchange rates:", error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+
+  app.get('/api/multi-currency-accounts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      // Mock multi-currency accounts
+      const accounts = [
+        {
+          id: 'account-1',
+          userId,
+          currencyId: 'usd-id',
+          balance: '1250.75',
+          accountNumber: '1234567890123456',
+          isDefault: true,
+          status: 'active'
+        },
+        {
+          id: 'account-2', 
+          userId,
+          currencyId: 'eur-id',
+          balance: '850.50',
+          accountNumber: '2345678901234567',
+          isDefault: false,
+          status: 'active'
+        }
+      ];
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching multi-currency accounts:", error);
+      res.status(500).json({ message: "Failed to fetch accounts" });
+    }
+  });
+
+  app.post('/api/multi-currency-accounts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { currencyId, isDefault } = req.body;
+      
+      const newAccount = {
+        id: `account-${Date.now()}`,
+        userId,
+        currencyId,
+        balance: '0.00',
+        accountNumber: `${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
+        isDefault: isDefault || false,
+        status: 'active',
+        createdAt: new Date().toISOString()
+      };
+      
+      res.json(newAccount);
+    } catch (error) {
+      console.error("Error creating multi-currency account:", error);
+      res.status(500).json({ message: "Failed to create account" });
+    }
+  });
+
+  app.post('/api/international-transfers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const transferData = req.body;
+      
+      const newTransfer = {
+        id: `transfer-${Date.now()}`,
+        userId,
+        ...transferData,
+        reference: `INT${Date.now()}`,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      
+      res.json(newTransfer);
+    } catch (error) {
+      console.error("Error creating international transfer:", error);
+      res.status(500).json({ message: "Failed to create transfer" });
+    }
+  });
+
+  app.post('/api/currency-exchanges', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const exchangeData = req.body;
+      
+      const newExchange = {
+        id: `exchange-${Date.now()}`,
+        userId,
+        ...exchangeData,
+        status: 'completed',
+        executedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      
+      res.json(newExchange);
+    } catch (error) {
+      console.error("Error creating currency exchange:", error);
+      res.status(500).json({ message: "Failed to create exchange" });
+    }
+  });
+
+  app.get('/api/banking-partners', async (req, res) => {
+    try {
+      // Mock banking partners
+      const partners = [
+        {
+          id: 'partner-1',
+          name: 'Wells Fargo',
+          country: 'United States',
+          countryCode: 'US',
+          swiftCode: 'WFBIUS6S',
+          isActive: true
+        },
+        {
+          id: 'partner-2',
+          name: 'HSBC',
+          country: 'United Kingdom', 
+          countryCode: 'GB',
+          swiftCode: 'HBUKGB4B',
+          isActive: true
+        },
+        {
+          id: 'partner-3',
+          name: 'BNP Paribas',
+          country: 'France',
+          countryCode: 'FR', 
+          swiftCode: 'BNPAFRPP',
+          isActive: true
+        },
+        {
+          id: 'partner-4',
+          name: 'Deutsche Bank',
+          country: 'Germany',
+          countryCode: 'DE',
+          swiftCode: 'DEUTDEFF',
+          isActive: true
+        }
+      ];
+      res.json(partners);
+    } catch (error) {
+      console.error("Error fetching banking partners:", error);
+      res.status(500).json({ message: "Failed to fetch partners" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
