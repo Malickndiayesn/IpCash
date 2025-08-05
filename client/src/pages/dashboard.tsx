@@ -128,6 +128,7 @@ export default function Dashboard() {
             
             <Button
               variant="ghost"
+              onClick={() => setLocation('/recharge')}
               className="flex flex-col items-center space-y-2 p-4 bg-green-50 rounded-xl hover:bg-green-100 h-auto"
             >
               <div className="w-12 h-12 bg-success rounded-xl flex items-center justify-center">

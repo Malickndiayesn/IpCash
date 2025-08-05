@@ -499,6 +499,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recharge/deposit endpoint
+  app.post('/api/recharge', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { amount, method, description } = req.body;
+      
+      if (!amount || !method) {
+        return res.status(400).json({ message: "Amount and method are required" });
+      }
+
+      const numericAmount = parseFloat(amount);
+      if (numericAmount <= 0 || numericAmount > 1000000) {
+        return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      // Get user's account
+      const userAccount = await storage.getUserAccount(userId);
+      if (!userAccount) {
+        return res.status(404).json({ message: "User account not found" });
+      }
+
+      // Create deposit transaction
+      const transactionData = {
+        toAccountId: userAccount.id,
+        type: "deposit" as const,
+        amount: amount,
+        description: description || "Recharge de compte",
+        recipientType: "internal" as const,
+        status: "completed" as const, // Auto-complete for demo
+        metadata: { rechargeMethod: method }
+      };
+
+      const transaction = await storage.createTransaction(transactionData);
+
+      // Update account balance
+      const currentBalance = parseFloat(userAccount.balance || "0");
+      const newBalance = (currentBalance + numericAmount).toString();
+      await storage.updateAccountBalance(userAccount.id, newBalance);
+
+      res.json({ 
+        transaction,
+        message: "Recharge successful",
+        newBalance 
+      });
+    } catch (error) {
+      console.error("Error processing recharge:", error);
+      res.status(500).json({ message: "Failed to process recharge" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
