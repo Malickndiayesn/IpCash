@@ -81,12 +81,19 @@ export default function Dashboard() {
         <div className="banking-gradient px-6 pt-16 pb-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                <span className="text-primary font-bold text-lg">{userInitials}</span>
-              </div>
-              <div>
-                <p className="text-blue-100 text-sm">Bonjour,</p>
-                <h2 className="text-white font-semibold">{(user as any)?.firstName || 'Utilisateur'}</h2>
+              <img 
+                src="/attached_assets/lgogo-ipcash_-02 light_1754420424054.png" 
+                alt="IPCASH" 
+                className="w-10 h-10"
+              />
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold text-lg">{userInitials}</span>
+                </div>
+                <div>
+                  <p className="text-blue-100 text-sm">Bonjour,</p>
+                  <h2 className="text-white font-semibold">{(user as any)?.firstName || 'Utilisateur'}</h2>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">

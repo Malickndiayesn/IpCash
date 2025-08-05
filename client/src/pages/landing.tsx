@@ -12,14 +12,14 @@ export default function Landing() {
       <div className="min-h-screen flex flex-col">
         {/* Header */}
         <div className="banking-gradient px-6 pt-16 pb-12 text-center">
-          <div className="w-24 h-24 bg-white rounded-2xl mx-auto mb-4 flex items-center justify-center p-2">
+          <div className="flex justify-center mb-4">
             <img 
-              src="/attached_assets/LOGO INTERPREST_1754416776469.png" 
-              alt="Interprest Logo" 
-              className="w-full h-full object-contain"
+              src="/attached_assets/lgogo-ipcash_-02 light_1754420424054.png" 
+              alt="IPCASH" 
+              className="w-32 h-auto"
             />
           </div>
-          <h1 className="text-white text-3xl font-bold mb-2">IPCASH</h1>
+          <h1 className="text-white text-3xl font-bold mb-2">Bienvenue sur IPCASH</h1>
           <p className="text-blue-100 text-lg">Votre néobanque panafricaine</p>
           <p className="text-blue-100 text-sm mt-2">
             Powered by Interprest • Moderne • Inclusive • Mobile-first
