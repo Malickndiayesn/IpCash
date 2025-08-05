@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, Send, CreditCard, User } from "lucide-react";
+import { Home, List, Send, CreditCard, User, TrendingUp, PiggyBank, Brain, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface MobileNavProps {
-  currentPage: 'dashboard' | 'transactions' | 'transfer' | 'cards' | 'profile';
+  currentPage: 'dashboard' | 'transactions' | 'transfer' | 'cards' | 'profile' | 'analytics' | 'savings' | 'credit' | 'support';
 }
 
 export function MobileNav({ currentPage }: MobileNavProps) {

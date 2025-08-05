@@ -14,7 +14,10 @@ import {
   TrendingUp,
   ArrowDown,
   ShoppingCart,
-  Smartphone
+  Smartphone,
+  Target,
+  Brain,
+  PiggyBank
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -145,10 +148,11 @@ export default function Dashboard() {
             
             <Button
               variant="ghost"
+              onClick={() => setLocation('/savings')}
               className="flex flex-col items-center space-y-2 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 h-auto"
             >
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                <TrendingUp className="text-white" size={20} />
+                <Target className="text-white" size={20} />
               </div>
               <span className="text-xs text-gray-700 font-medium text-center">Épargne</span>
             </Button>
@@ -173,6 +177,37 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+
+          {/* AI-Powered Features */}
+          <Card className="bg-gradient-to-r from-purple-500 to-blue-500 border-none text-white mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="font-bold text-lg mb-1">Intelligence Artificielle</h4>
+                  <p className="text-purple-100 text-sm">Fonctionnalités avancées avec IA</p>
+                </div>
+                <Brain className="text-purple-100" size={32} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => setLocation('/analytics')}
+                  variant="ghost"
+                  className="bg-white/20 hover:bg-white/30 text-white border-none h-auto p-3 flex flex-col items-center space-y-2"
+                >
+                  <TrendingUp size={20} />
+                  <span className="text-xs font-medium">Analyse financière</span>
+                </Button>
+                <Button
+                  onClick={() => setLocation('/credit')}
+                  variant="ghost"
+                  className="bg-white/20 hover:bg-white/30 text-white border-none h-auto p-3 flex flex-col items-center space-y-2"
+                >
+                  <CreditCard size={20} />
+                  <span className="text-xs font-medium">Crédit intelligent</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Mobile Money Integration */}
           <Card className="bg-gradient-to-r from-orange-500 to-red-500 border-none text-white mb-6">

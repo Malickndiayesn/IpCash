@@ -11,6 +11,11 @@ import Transfer from "@/pages/transfer";
 import Transactions from "@/pages/transactions";
 import Cards from "@/pages/cards";
 import Profile from "@/pages/profile";
+import Analytics from "@/pages/analytics";
+import Savings from "@/pages/savings";
+import Credit from "@/pages/credit";
+import Support from "@/pages/support";
+import KYC from "@/pages/kyc";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +31,11 @@ function Router() {
           <Route path="/transactions" component={Transactions} />
           <Route path="/cards" component={Cards} />
           <Route path="/profile" component={Profile} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/savings" component={Savings} />
+          <Route path="/credit" component={Credit} />
+          <Route path="/support" component={Support} />
+          <Route path="/kyc" component={KYC} />
         </>
       )}
       <Route component={NotFound} />

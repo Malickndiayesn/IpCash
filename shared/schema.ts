@@ -109,6 +109,100 @@ export const contacts = pgTable("contacts", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// KYC and verification
+export const kycDocuments = pgTable("kyc_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  documentType: varchar("document_type").notNull(), // 'id_card', 'passport', 'driver_license'
+  documentNumber: varchar("document_number").notNull(),
+  frontImageUrl: varchar("front_image_url"),
+  backImageUrl: varchar("back_image_url"),
+  verificationStatus: varchar("verification_status").default("pending"), // 'pending', 'approved', 'rejected'
+  verifiedAt: timestamp("verified_at"),
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Savings goals and automatic savings
+export const savingsGoals = pgTable("savings_goals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: varchar("name").notNull(),
+  targetAmount: decimal("target_amount", { precision: 15, scale: 2 }).notNull(),
+  currentAmount: decimal("current_amount", { precision: 15, scale: 2 }).default("0.00"),
+  targetDate: timestamp("target_date"),
+  autoSaveAmount: decimal("auto_save_amount", { precision: 15, scale: 2 }),
+  autoSaveFrequency: varchar("auto_save_frequency"), // 'daily', 'weekly', 'monthly'
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Credit scoring and loan requests
+export const creditScore = pgTable("credit_score", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  score: integer("score").notNull(), // 300-850 range
+  factors: jsonb("factors"), // AI analysis factors
+  lastCalculated: timestamp("last_calculated").defaultNow(),
+  transactionHistory: decimal("transaction_history", { precision: 5, scale: 2 }),
+  savingsBehavior: decimal("savings_behavior", { precision: 5, scale: 2 }),
+  paymentReliability: decimal("payment_reliability", { precision: 5, scale: 2 }),
+});
+
+export const loanRequests = pgTable("loan_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  purpose: varchar("purpose").notNull(),
+  duration: integer("duration").notNull(), // in months
+  interestRate: decimal("interest_rate", { precision: 5, scale: 4 }),
+  status: varchar("status").default("pending"), // 'pending', 'approved', 'rejected', 'disbursed', 'repaid'
+  aiDecision: jsonb("ai_decision"), // AI analysis and recommendation
+  approvedAmount: decimal("approved_amount", { precision: 15, scale: 2 }),
+  monthlyPayment: decimal("monthly_payment", { precision: 15, scale: 2 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  decidedAt: timestamp("decided_at"),
+});
+
+// Financial analytics and insights
+export const financialInsights = pgTable("financial_insights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  month: varchar("month").notNull(), // 'YYYY-MM'
+  totalIncome: decimal("total_income", { precision: 15, scale: 2 }).default("0.00"),
+  totalExpenses: decimal("total_expenses", { precision: 15, scale: 2 }).default("0.00"),
+  savingsRate: decimal("savings_rate", { precision: 5, scale: 2 }),
+  categoryBreakdown: jsonb("category_breakdown"), // expenses by category
+  recommendations: jsonb("recommendations"), // AI-generated recommendations
+  budgetAlerts: jsonb("budget_alerts"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Support tickets
+export const supportTickets = pgTable("support_tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  subject: varchar("subject").notNull(),
+  description: text("description").notNull(),
+  category: varchar("category").notNull(), // 'technical', 'billing', 'general'
+  priority: varchar("priority").default("medium"), // 'low', 'medium', 'high', 'urgent'
+  status: varchar("status").default("open"), // 'open', 'in_progress', 'resolved', 'closed'
+  assignedTo: varchar("assigned_to"),
+  resolution: text("resolution"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const supportMessages = pgTable("support_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: varchar("ticket_id").references(() => supportTickets.id).notNull(),
+  senderId: varchar("sender_id").notNull(),
+  senderType: varchar("sender_type").notNull(), // 'user', 'agent'
+  message: text("message").notNull(),
+  attachments: jsonb("attachments"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -143,6 +237,34 @@ export const insertContactSchema = createInsertSchema(contacts).omit({
   createdAt: true,
 });
 
+export const insertKycDocumentSchema = createInsertSchema(kycDocuments).omit({
+  id: true,
+  createdAt: true,
+  verifiedAt: true,
+});
+
+export const insertSavingsGoalSchema = createInsertSchema(savingsGoals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertLoanRequestSchema = createInsertSchema(loanRequests).omit({
+  id: true,
+  createdAt: true,
+  decidedAt: true,
+});
+
+export const insertSupportTicketSchema = createInsertSchema(supportTickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSupportMessageSchema = createInsertSchema(supportMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -156,3 +278,15 @@ export type MobileMoneyAccount = typeof mobileMoneyAccounts.$inferSelect;
 export type InsertMobileMoneyAccount = z.infer<typeof insertMobileMoneyAccountSchema>;
 export type Contact = typeof contacts.$inferSelect;
 export type InsertContact = z.infer<typeof insertContactSchema>;
+export type KycDocument = typeof kycDocuments.$inferSelect;
+export type InsertKycDocument = z.infer<typeof insertKycDocumentSchema>;
+export type SavingsGoal = typeof savingsGoals.$inferSelect;
+export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
+export type CreditScore = typeof creditScore.$inferSelect;
+export type LoanRequest = typeof loanRequests.$inferSelect;
+export type InsertLoanRequest = z.infer<typeof insertLoanRequestSchema>;
+export type FinancialInsight = typeof financialInsights.$inferSelect;
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type InsertSupportTicket = z.infer<typeof insertSupportTicketSchema>;
+export type SupportMessage = typeof supportMessages.$inferSelect;
+export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;

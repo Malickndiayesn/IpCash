@@ -50,9 +50,11 @@ export default function Profile() {
         },
         {
           icon: Shield,
-          title: "Sécurité",
+          title: "Vérification KYC",
+          subtitle: "Augmentez vos limites",
           iconBg: "bg-green-100", 
           iconColor: "text-success",
+          action: () => setLocation('/kyc'),
         },
         {
           icon: Bell,
@@ -69,14 +71,18 @@ export default function Profile() {
         {
           icon: PieChart,
           title: "Analyse financière",
+          subtitle: "IA • Insights personnalisés",
           iconBg: "bg-purple-100",
           iconColor: "text-purple-500",
+          action: () => setLocation('/analytics'),
         },
         {
           icon: Coins,
           title: "Crédit intelligent",
+          subtitle: "Prêts avec IA",
           iconBg: "bg-yellow-100",
           iconColor: "text-warning",
+          action: () => setLocation('/credit'),
         },
         {
           icon: Smartphone,
@@ -97,13 +103,16 @@ export default function Profile() {
         },
         {
           icon: MessageCircle,
-          title: "Chat en direct",
+          title: "Support client",
+          subtitle: "Chat • Tickets • Urgences",
           iconBg: "bg-green-100",
           iconColor: "text-success",
+          action: () => setLocation('/support'),
         },
         {
           icon: Phone,
           title: "Nous contacter",
+          subtitle: "+221 33 123 45 67",
           iconBg: "bg-red-100",
           iconColor: "text-error",
         },
@@ -168,6 +177,7 @@ export default function Profile() {
                   {section.items.map((item, itemIndex) => (
                     <button
                       key={itemIndex}
+                      onClick={item.action}
                       className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200"
                     >
                       <div className="flex items-center space-x-3">
