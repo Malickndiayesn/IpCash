@@ -1,5 +1,10 @@
 import {
   users,
+  userRoles,
+  userRoleAssignments,
+  transferFees,
+  operationProfits,
+  operationAnalytics,
   accounts,
   transactions,
   cards,
@@ -24,6 +29,16 @@ import {
   type InsertRegisteredOperator,
   type InstantTransfer,
   type InsertInstantTransfer,
+  type UserRole,
+  type InsertUserRole,
+  type UserRoleAssignment,
+  type InsertUserRoleAssignment,
+  type TransferFee,
+  type InsertTransferFee,
+  type OperationProfit,
+  type InsertOperationProfit,
+  type OperationAnalytics,
+  type InsertOperationAnalytics,
   type KycDocument,
   type InsertKycDocument,
 } from "@shared/schema";
@@ -51,7 +66,7 @@ export interface IStorage {
   // Card operations
   getUserCards(userId: string): Promise<Card[]>;
   createCard(card: InsertCard): Promise<Card>;
-  updateCardSettings(cardId: string, settings: Partial<Card>): Promise<void>;
+  updateCardSettings(cardId: string, settings: Partial<Card>): Promise<Card>;
   
   // Mobile Money operations
   getUserMobileMoneyAccounts(userId: string): Promise<MobileMoneyAccount[]>;
@@ -190,11 +205,11 @@ export class DatabaseStorage implements IStorage {
     return newCard;
   }
 
-  async updateCardSettings(cardId: string, userId: string, settings: any): Promise<Card> {
+  async updateCardSettings(cardId: string, settings: Partial<Card>): Promise<Card> {
     await db
       .update(cards)
       .set(settings)
-      .where(and(eq(cards.id, cardId), eq(cards.userId, userId)));
+      .where(eq(cards.id, cardId));
     
     // Return updated card
     const [updatedCard] = await db
@@ -383,19 +398,7 @@ export class DatabaseStorage implements IStorage {
     return kycDocument;
   }
 
-  async updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument> {
-    const [kycDocument] = await db
-      .update(kycDocuments)
-      .set({ 
-        status, 
-        rejectionReason,
-        verifiedAt: status === 'approved' ? new Date() : null,
-        updatedAt: new Date()
-      })
-      .where(eq(kycDocuments.id, documentId))
-      .returning();
-    return kycDocument;
-  }
+
 
   // Helper method to get mobile money accounts (alias for getUserMobileMoneyAccounts)
   async getMobileMoneyAccounts(userId: string): Promise<MobileMoneyAccount[]> {
@@ -404,16 +407,16 @@ export class DatabaseStorage implements IStorage {
 
   // Admin operations
   async getAdminStats(): Promise<any> {
-    const totalUsers = await db.select({ count: sql`count(*)` }).from(users);
-    const totalTransactions = await db.select({ count: sql`count(*)` }).from(transactions);
-    const pendingKYC = await db.select({ count: sql`count(*)` }).from(kycDocuments).where(eq(kycDocuments.verificationStatus, 'pending'));
-    const activeCards = await db.select({ count: sql`count(*)` }).from(cards).where(eq(cards.isActive, true));
+    const totalUsers = await db.select({ count: sql`count(*)::int` }).from(users);
+    const totalTransactions = await db.select({ count: sql`count(*)::int` }).from(transactions);
+    const pendingKYC = await db.select({ count: sql`count(*)::int` }).from(kycDocuments).where(eq(kycDocuments.verificationStatus, 'pending'));
+    const activeCards = await db.select({ count: sql`count(*)::int` }).from(cards).where(eq(cards.isActive, true));
     
     return {
       totalUsers: Number(totalUsers[0]?.count || 0),
-      activeUsers: Number(totalUsers[0]?.count || 0), // Simplified - same as total for now
+      activeUsers: Number(totalUsers[0]?.count || 0),
       totalTransactions: Number(totalTransactions[0]?.count || 0),
-      totalAmount: "0.00", // Placeholder - could calculate sum
+      totalAmount: "0.00",
       pendingKYC: Number(pendingKYC[0]?.count || 0),
       activeCards: Number(activeCards[0]?.count || 0)
     };
@@ -428,22 +431,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPendingKYCDocuments(): Promise<any[]> {
-    return await db
-      .select({
-        id: kycDocuments.id,
-        userId: kycDocuments.userId,
-        documentType: kycDocuments.documentType,
-        frontImageUrl: kycDocuments.frontImageUrl,
-        status: kycDocuments.verificationStatus,
-        createdAt: kycDocuments.createdAt,
-        userFirstName: users.firstName,
-        userLastName: users.lastName,
-        userEmail: users.email
-      })
-      .from(kycDocuments)
-      .leftJoin(users, eq(kycDocuments.userId, users.id))
-      .where(eq(kycDocuments.verificationStatus, 'pending'))
-      .limit(50);
+    try {
+      return await db
+        .select({
+          id: kycDocuments.id,
+          userId: kycDocuments.userId,
+          documentType: kycDocuments.documentType,
+          documentUrl: kycDocuments.documentUrl,
+          status: kycDocuments.verificationStatus,
+          createdAt: kycDocuments.createdAt,
+          userFirstName: users.firstName,
+          userLastName: users.lastName,
+          userEmail: users.email
+        })
+        .from(kycDocuments)
+        .leftJoin(users, eq(kycDocuments.userId, users.id))
+        .where(eq(kycDocuments.verificationStatus, 'pending'))
+        .limit(50);
+    } catch (error) {
+      console.error('Error fetching pending KYC documents:', error);
+      return [];
+    }
   }
 
   async suspendUser(userId: string, suspend: boolean): Promise<void> {
@@ -483,7 +491,7 @@ export class DatabaseStorage implements IStorage {
         headers = 'ID,From User,To User,Amount,Currency,Status,Type,Created At\n';
         const transactions = await this.getAllTransactions();
         rows = transactions.map(tx => 
-          `${tx.id},${tx.fromUserId},${tx.toUserId},${tx.amount},${tx.currency},${tx.status},${tx.type},${tx.createdAt}`
+          `${tx.id},${tx.userId},${tx.recipientId || ''},${tx.amount},${tx.currency},${tx.status},${tx.type},${tx.createdAt}`
         );
         break;
         
@@ -501,6 +509,100 @@ export class DatabaseStorage implements IStorage {
     }
     
     return headers + rows.join('\n');
+  }
+
+  // New Admin Operations
+  async createUser(userData: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  async getUserRoles(): Promise<UserRole[]> {
+    return await db.select().from(userRoles).where(eq(userRoles.isActive, true));
+  }
+
+  async createUserRole(roleData: InsertUserRole): Promise<UserRole> {
+    const [role] = await db.insert(userRoles).values(roleData).returning();
+    return role;
+  }
+
+  async assignUserRole(assignment: InsertUserRoleAssignment): Promise<UserRoleAssignment> {
+    const [roleAssignment] = await db.insert(userRoleAssignments).values(assignment).returning();
+    return roleAssignment;
+  }
+
+  async getUserRoleAssignments(userId: string): Promise<UserRoleAssignment[]> {
+    return await db.select()
+      .from(userRoleAssignments)
+      .where(eq(userRoleAssignments.userId, userId));
+  }
+
+  async getTransferFees(): Promise<TransferFee[]> {
+    return await db.select().from(transferFees).where(eq(transferFees.isActive, true));
+  }
+
+  async createTransferFee(feeData: InsertTransferFee): Promise<TransferFee> {
+    const [fee] = await db.insert(transferFees).values(feeData).returning();
+    return fee;
+  }
+
+  async updateTransferFee(feeId: string, updates: Partial<TransferFee>): Promise<TransferFee> {
+    const [updatedFee] = await db
+      .update(transferFees)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(transferFees.id, feeId))
+      .returning();
+    return updatedFee;
+  }
+
+  async getOperationProfits(limit: number = 50): Promise<OperationProfit[]> {
+    return await db.select()
+      .from(operationProfits)
+      .orderBy(desc(operationProfits.date))
+      .limit(limit);
+  }
+
+  async createOperationProfit(profitData: InsertOperationProfit): Promise<OperationProfit> {
+    const [profit] = await db.insert(operationProfits).values(profitData).returning();
+    return profit;
+  }
+
+  async getOperationAnalytics(operationType?: string, limit: number = 30): Promise<OperationAnalytics[]> {
+    let query = db.select().from(operationAnalytics);
+    
+    if (operationType) {
+      query = query.where(eq(operationAnalytics.operationType, operationType));
+    }
+    
+    return await query
+      .orderBy(desc(operationAnalytics.date))
+      .limit(limit);
+  }
+
+  async getProfitsByOperationType(): Promise<any[]> {
+    return await db
+      .select({
+        operationType: operationProfits.operationType,
+        totalProfit: sql`sum(${operationProfits.netProfit})`,
+        transactionCount: sql`count(*)`,
+        avgProfitMargin: sql`avg(${operationProfits.profitMargin})`
+      })
+      .from(operationProfits)
+      .groupBy(operationProfits.operationType);
+  }
+
+  async getMonthlyProfitTrends(): Promise<any[]> {
+    return await db
+      .select({
+        month: sql`date_trunc('month', ${operationProfits.date})`,
+        totalProfit: sql`sum(${operationProfits.netProfit})`,
+        totalFees: sql`sum(${operationProfits.feeAmount})`,
+        transactionCount: sql`count(*)`
+      })
+      .from(operationProfits)
+      .groupBy(sql`date_trunc('month', ${operationProfits.date})`)
+      .orderBy(sql`date_trunc('month', ${operationProfits.date}) DESC`)
+      .limit(12);
   }
 }
 

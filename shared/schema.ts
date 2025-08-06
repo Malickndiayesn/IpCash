@@ -364,6 +364,46 @@ export const bankingPartners = pgTable("banking_partners", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Admin tables for enhanced administration interface
+export const adminRoles = pgTable("admin_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: varchar("description").notNull(),
+  permissions: jsonb("permissions").default("[]"), // Array of permissions
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const transferFees = pgTable("transfer_fees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  operatorFrom: varchar("operator_from").notNull(),
+  operatorTo: varchar("operator_to").notNull(),
+  minAmount: decimal("min_amount", { precision: 15, scale: 2 }).notNull(),
+  maxAmount: decimal("max_amount", { precision: 15, scale: 2 }).notNull(),
+  feeType: varchar("fee_type").notNull(), // 'fixed', 'percentage', 'tiered'
+  feeValue: decimal("fee_value", { precision: 15, scale: 6 }).notNull(),
+  currency: varchar("currency").default("XOF"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const operationProfits = pgTable("operation_profits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  operationType: varchar("operation_type").notNull(), // 'transfer', 'exchange', 'card_payment', etc.
+  operatorFrom: varchar("operator_from"),
+  operatorTo: varchar("operator_to"),
+  grossAmount: decimal("gross_amount", { precision: 15, scale: 2 }).notNull(),
+  feeAmount: decimal("fee_amount", { precision: 15, scale: 2 }).notNull(),
+  netProfit: decimal("net_profit", { precision: 15, scale: 2 }).notNull(),
+  profitMargin: decimal("profit_margin", { precision: 5, scale: 2 }), // Percentage
+  currency: varchar("currency").default("XOF"),
+  transactionId: varchar("transaction_id"), // Reference to related transaction
+  date: timestamp("date").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -471,6 +511,23 @@ export const insertInstantTransferSchema = createInsertSchema(instantTransfers).
   processedAt: true,
 });
 
+export const insertAdminRoleSchema = createInsertSchema(adminRoles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTransferFeeSchema = createInsertSchema(transferFees).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOperationProfitSchema = createInsertSchema(operationProfits).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -525,3 +582,72 @@ export type CurrencyExchange = typeof currencyExchanges.$inferSelect;
 export type InsertCurrencyExchange = z.infer<typeof insertCurrencyExchangeSchema>;
 export type BankingPartner = typeof bankingPartners.$inferSelect;
 export type InsertBankingPartner = z.infer<typeof insertBankingPartnerSchema>;
+
+// Admin types
+export type AdminRole = typeof adminRoles.$inferSelect;
+export type InsertAdminRole = z.infer<typeof insertAdminRoleSchema>;
+export type TransferFee = typeof transferFees.$inferSelect;
+export type InsertTransferFee = z.infer<typeof insertTransferFeeSchema>;
+export type OperationProfit = typeof operationProfits.$inferSelect;
+export type InsertOperationProfit = z.infer<typeof insertOperationProfitSchema>;
+
+// User roles and permissions
+export const userRoles = pgTable("user_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(), // 'admin', 'user', 'operator', 'support'
+  description: text("description"),
+  permissions: jsonb("permissions").notNull(), // JSON array of permissions
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userRoleAssignments = pgTable("user_role_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  roleId: varchar("role_id").references(() => userRoles.id).notNull(),
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+});
+
+// Operation analytics
+export const operationAnalytics = pgTable("operation_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull(),
+  operationType: varchar("operation_type").notNull(),
+  totalCount: integer("total_count").default(0),
+  successfulCount: integer("successful_count").default(0),
+  failedCount: integer("failed_count").default(0),
+  totalAmount: decimal("total_amount", { precision: 15, scale: 2 }).default("0.00"),
+  totalFees: decimal("total_fees", { precision: 15, scale: 2 }).default("0.00"),
+  totalProfit: decimal("total_profit", { precision: 15, scale: 2 }).default("0.00"),
+  avgTransactionValue: decimal("avg_transaction_value", { precision: 15, scale: 2 }),
+  topOperator: varchar("top_operator"),
+  metadata: jsonb("metadata"), // Additional analytics data
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new admin tables
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserRoleAssignmentSchema = createInsertSchema(userRoleAssignments).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export const insertOperationAnalyticsSchema = createInsertSchema(operationAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
+// New admin types
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
+export type InsertUserRoleAssignment = z.infer<typeof insertUserRoleAssignmentSchema>;
+export type OperationAnalytics = typeof operationAnalytics.$inferSelect;
+export type InsertOperationAnalytics = z.infer<typeof insertOperationAnalyticsSchema>;

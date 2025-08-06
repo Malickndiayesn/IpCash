@@ -242,6 +242,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New Admin Routes - User Creation
+  app.post('/api/admin/users', isAuthenticated, async (req, res) => {
+    try {
+      const user = await storage.createUser(req.body);
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Roles Management
+  app.get('/api/admin/roles', isAuthenticated, async (req, res) => {
+    try {
+      const roles = await storage.getUserRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  app.post('/api/admin/roles', isAuthenticated, async (req, res) => {
+    try {
+      const role = await storage.createUserRole(req.body);
+      res.status(201).json(role);
+    } catch (error) {
+      console.error("Error creating role:", error);
+      res.status(500).json({ message: "Failed to create role" });
+    }
+  });
+
+  app.post('/api/admin/users/:userId/roles', isAuthenticated, async (req, res) => {
+    try {
+      const assignment = await storage.assignUserRole({
+        userId: req.params.userId,
+        roleId: req.body.roleId,
+        assignedBy: req.user?.claims?.sub
+      });
+      res.status(201).json(assignment);
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      res.status(500).json({ message: "Failed to assign role" });
+    }
+  });
+
+  app.get('/api/admin/users/:userId/roles', isAuthenticated, async (req, res) => {
+    try {
+      const assignments = await storage.getUserRoleAssignments(req.params.userId);
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  // Transfer Fees Management
+  app.get('/api/admin/transfer-fees', isAuthenticated, async (req, res) => {
+    try {
+      const fees = await storage.getTransferFees();
+      res.json(fees);
+    } catch (error) {
+      console.error("Error fetching transfer fees:", error);
+      res.status(500).json({ message: "Failed to fetch transfer fees" });
+    }
+  });
+
+  app.post('/api/admin/transfer-fees', isAuthenticated, async (req, res) => {
+    try {
+      const fee = await storage.createTransferFee(req.body);
+      res.status(201).json(fee);
+    } catch (error) {
+      console.error("Error creating transfer fee:", error);
+      res.status(500).json({ message: "Failed to create transfer fee" });
+    }
+  });
+
+  app.put('/api/admin/transfer-fees/:feeId', isAuthenticated, async (req, res) => {
+    try {
+      const updatedFee = await storage.updateTransferFee(req.params.feeId, req.body);
+      res.json(updatedFee);
+    } catch (error) {
+      console.error("Error updating transfer fee:", error);
+      res.status(500).json({ message: "Failed to update transfer fee" });
+    }
+  });
+
+  // Operation Profits
+  app.get('/api/admin/profits', isAuthenticated, async (req, res) => {
+    try {
+      const profits = await storage.getOperationProfits(50);
+      res.json(profits);
+    } catch (error) {
+      console.error("Error fetching profits:", error);
+      res.status(500).json({ message: "Failed to fetch profits" });
+    }
+  });
+
+  app.get('/api/admin/profits/by-operation', isAuthenticated, async (req, res) => {
+    try {
+      const profits = await storage.getProfitsByOperationType();
+      res.json(profits);
+    } catch (error) {
+      console.error("Error fetching profits by operation:", error);
+      res.status(500).json({ message: "Failed to fetch profits by operation" });
+    }
+  });
+
+  app.get('/api/admin/profits/trends', isAuthenticated, async (req, res) => {
+    try {
+      const trends = await storage.getMonthlyProfitTrends();
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching profit trends:", error);
+      res.status(500).json({ message: "Failed to fetch profit trends" });
+    }
+  });
+
+  // Operation Analytics
+  app.get('/api/admin/analytics', isAuthenticated, async (req, res) => {
+    try {
+      const operationType = req.query.type as string;
+      const analytics = await storage.getOperationAnalytics(operationType, 30);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

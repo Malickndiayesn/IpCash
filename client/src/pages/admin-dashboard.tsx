@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,17 @@ import {
   Shield,
   Settings,
   Database,
-  TrendingUp
+  TrendingUp,
+  UserPlus,
+  BarChart3,
+  DollarSign,
+  Activity
 } from "lucide-react";
+import { AdminUserCreation } from "@/components/AdminUserCreation";
+import { AdminRolesManagement } from "@/components/AdminRolesManagement";
+import { AdminTransferFees } from "@/components/AdminTransferFees";
+import { AdminProfitsTracking } from "@/components/AdminProfitsTracking";
+import { AdminOperationDiagrams } from "@/components/AdminOperationDiagrams";
 
 interface AdminStats {
   totalUsers: number;
@@ -247,19 +256,35 @@ export default function AdminDashboard() {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full">
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users size={16} />
-              Utilisateurs
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 w-full">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Database size={16} />
+              Vue d'ensemble
             </TabsTrigger>
-            <TabsTrigger value="transactions" className="flex items-center gap-2">
-              <ArrowUpDown size={16} />
-              Transactions
+            <TabsTrigger value="create-user" className="flex items-center gap-2">
+              <UserPlus size={16} />
+              Créer Utilisateur
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="flex items-center gap-2">
+              <Shield size={16} />
+              Rôles
+            </TabsTrigger>
+            <TabsTrigger value="fees" className="flex items-center gap-2">
+              <Settings size={16} />
+              Frais
+            </TabsTrigger>
+            <TabsTrigger value="profits" className="flex items-center gap-2">
+              <DollarSign size={16} />
+              Profits
+            </TabsTrigger>
+            <TabsTrigger value="diagrams" className="flex items-center gap-2">
+              <BarChart3 size={16} />
+              Diagrammes
             </TabsTrigger>
             <TabsTrigger value="kyc" className="flex items-center gap-2">
-              <Shield size={16} />
-              Validation KYC
+              <AlertCircle size={16} />
+              KYC
             </TabsTrigger>
             <TabsTrigger value="exports" className="flex items-center gap-2">
               <Download size={16} />
@@ -267,8 +292,8 @@ export default function AdminDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Users Tab */}
-          <TabsContent value="users" className="space-y-4">
+          {/* Vue d'ensemble */}
+          <TabsContent value="overview" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Gestion des Utilisateurs</CardTitle>
@@ -364,6 +389,31 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Créer Utilisateur Tab */}
+          <TabsContent value="create-user" className="space-y-4">
+            <AdminUserCreation />
+          </TabsContent>
+
+          {/* Gestion des Rôles Tab */}
+          <TabsContent value="roles" className="space-y-4">
+            <AdminRolesManagement />
+          </TabsContent>
+
+          {/* Frais de Transfert Tab */}
+          <TabsContent value="fees" className="space-y-4">
+            <AdminTransferFees />
+          </TabsContent>
+
+          {/* Suivi des Profits Tab */}
+          <TabsContent value="profits" className="space-y-4">
+            <AdminProfitsTracking />
+          </TabsContent>
+
+          {/* Diagrammes Opérationnels Tab */}
+          <TabsContent value="diagrams" className="space-y-4">
+            <AdminOperationDiagrams />
           </TabsContent>
 
           {/* Transactions Tab */}
