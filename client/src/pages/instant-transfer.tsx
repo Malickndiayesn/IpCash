@@ -26,7 +26,8 @@ import {
   Camera,
   Users,
   Star,
-  History
+  History,
+  Send
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { MobileNav } from "@/components/ui/mobile-nav";
