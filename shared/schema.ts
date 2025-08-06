@@ -130,7 +130,35 @@ export const instantTransfers = pgTable("instant_transfers", {
   status: varchar("status").default("pending"), // 'pending', 'processing', 'completed', 'failed'
   externalTransactionId: varchar("external_transaction_id"), // Operator's transaction ID
   errorMessage: text("error_message"),
+  qrCodeData: jsonb("qr_code_data"), // QR code generation data
+  transferMethod: varchar("transfer_method").default("manual"), // 'manual', 'qr_code', 'nfc'
   processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Transfer favorites and templates
+export const transferFavorites = pgTable("transfer_favorites", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  recipientName: varchar("recipient_name").notNull(),
+  recipientPhone: varchar("recipient_phone").notNull(),
+  operatorId: varchar("operator_id").references(() => registeredOperators.id).notNull(),
+  defaultAmount: decimal("default_amount", { precision: 15, scale: 2 }),
+  defaultDescription: varchar("default_description"),
+  transferCount: integer("transfer_count").default(0),
+  lastUsed: timestamp("last_used").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// QR Code tracking for analytics
+export const qrCodeScans = pgTable("qr_code_scans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  scannerUserId: varchar("scanner_user_id").references(() => users.id),
+  qrCodeData: jsonb("qr_code_data").notNull(),
+  scanLocation: varchar("scan_location"), // GPS coordinates
+  scanMethod: varchar("scan_method").default("camera"), // 'camera', 'upload', 'manual'
+  resultAction: varchar("result_action"), // 'transfer_initiated', 'invalid_format', 'cancelled'
   createdAt: timestamp("created_at").defaultNow(),
 });
 

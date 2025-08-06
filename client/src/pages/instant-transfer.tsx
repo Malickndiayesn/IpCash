@@ -21,10 +21,20 @@ import {
   Wallet, 
   Building2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  QrCode,
+  Camera,
+  Users,
+  Star,
+  History
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { QRCodeGenerator } from "@/components/QRCodeGenerator";
+import { QRCodeScanner } from "@/components/QRCodeScanner";
+import { TransferLimitsCard } from "@/components/TransferLimitsCard";
+import { TransferHistory } from "@/components/TransferHistory";
+import { FeeCalculator } from "@/components/FeeCalculator";
 import type { RegisteredOperator, MobileMoneyAccount } from "@shared/schema";
 
 const instantTransferSchema = z.object({
@@ -48,6 +58,10 @@ export default function InstantTransfer() {
   const [transferResult, setTransferResult] = useState<any>(null);
   const [selectedFromOperator, setSelectedFromOperator] = useState<RegisteredOperator | null>(null);
   const [selectedToOperator, setSelectedToOperator] = useState<RegisteredOperator | null>(null);
+  const [showQRGenerator, setShowQRGenerator] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [favoriteContacts, setFavoriteContacts] = useState<any[]>([]);
+  const [recentTransfers, setRecentTransfers] = useState<any[]>([]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -75,6 +89,10 @@ export default function InstantTransfer() {
 
   const { data: frequentContacts } = useQuery({
     queryKey: ["/api/contacts/frequent"],
+  });
+
+  const { data: recentTransactions } = useQuery({
+    queryKey: ["/api/transactions"],
   });
 
   const instantTransferMutation = useMutation({
@@ -159,6 +177,54 @@ export default function InstantTransfer() {
   const confirmTransfer = () => {
     const formData = form.getValues();
     instantTransferMutation.mutate(formData);
+  };
+
+  const handleQRScan = (result: any) => {
+    // Remplir automatiquement le formulaire avec les données scannées
+    const operator = registeredOperators?.find(op => op.id === result.operatorId);
+    if (operator) {
+      form.setValue("toOperatorId", result.operatorId);
+      form.setValue("toAccount", result.accountNumber);
+      if (result.amount) {
+        form.setValue("amount", result.amount);
+      }
+      if (result.description) {
+        form.setValue("description", result.description);
+      }
+      setSelectedToOperator(operator);
+    }
+    setShowQRScanner(false);
+    
+    toast({
+      title: "QR Code scanné",
+      description: `Informations de ${result.operatorName} chargées`,
+    });
+  };
+
+  const generateMyQRCode = () => {
+    // Générer un QR code pour recevoir des paiements
+    const myQRData = {
+      operatorId: "ipcash-wallet",
+      operatorName: "IPCASH Wallet",
+      accountNumber: "77 123 45 67", // À remplacer par le numéro de l'utilisateur
+      accountName: "Mon Compte IPCASH",
+    };
+    
+    setShowQRGenerator(true);
+  };
+
+  const addToFavorites = (contact: any) => {
+    setFavoriteContacts(prev => {
+      if (!prev.some(fav => fav.phoneNumber === contact.phoneNumber)) {
+        return [...prev, { ...contact, isFavorite: true }];
+      }
+      return prev;
+    });
+    
+    toast({
+      title: "Ajouté aux favoris",
+      description: `${contact.name} ajouté à vos favoris`,
+    });
   };
 
   if (operatorsLoading || accountsLoading) {
@@ -374,24 +440,50 @@ export default function InstantTransfer() {
             </CardContent>
           </Card>
 
+          {/* QR Code Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => setShowQRScanner(true)}
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center space-y-2"
+            >
+              <Camera size={24} className="text-blue-500" />
+              <span className="text-sm font-medium">Scanner QR</span>
+            </Button>
+            <Button
+              onClick={generateMyQRCode}
+              variant="outline"
+              className="h-20 flex flex-col items-center justify-center space-y-2"
+            >
+              <QrCode size={24} className="text-green-500" />
+              <span className="text-sm font-medium">Mon QR Code</span>
+            </Button>
+          </div>
+
           {/* Features */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             <Card className="text-center">
-              <CardContent className="p-3">
-                <Zap className="mx-auto text-blue-500 mb-2" size={20} />
+              <CardContent className="p-2">
+                <Zap className="mx-auto text-blue-500 mb-1" size={16} />
                 <p className="text-xs font-medium">Instantané</p>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-3">
-                <Shield className="mx-auto text-green-500 mb-2" size={20} />
+              <CardContent className="p-2">
+                <Shield className="mx-auto text-green-500 mb-1" size={16} />
                 <p className="text-xs font-medium">Sécurisé</p>
               </CardContent>
             </Card>
             <Card className="text-center">
-              <CardContent className="p-3">
-                <Clock className="mx-auto text-purple-500 mb-2" size={20} />
+              <CardContent className="p-2">
+                <Clock className="mx-auto text-purple-500 mb-1" size={16} />
                 <p className="text-xs font-medium">24h/24</p>
+              </CardContent>
+            </Card>
+            <Card className="text-center">
+              <CardContent className="p-2">
+                <QrCode className="mx-auto text-orange-500 mb-1" size={16} />
+                <p className="text-xs font-medium">QR Code</p>
               </CardContent>
             </Card>
           </div>
@@ -511,10 +603,15 @@ export default function InstantTransfer() {
                             max="1000000"
                           />
                         </FormControl>
-                        {selectedFromOperator && selectedToOperator && (
-                          <p className="text-xs text-gray-500">
-                            Frais estimés: {calculateFees()} FCFA
-                          </p>
+                        {form.watch("amount") && selectedFromOperator && selectedToOperator && (
+                          <div className="mt-2">
+                            <FeeCalculator
+                              amount={form.watch("amount")}
+                              fromOperator={selectedFromOperator}
+                              toOperator={selectedToOperator}
+                              showDetails={false}
+                            />
+                          </div>
                         )}
                         <FormMessage />
                       </FormItem>
@@ -549,34 +646,119 @@ export default function InstantTransfer() {
             </CardContent>
           </Card>
 
-          {/* Frequent Contacts */}
-          {frequentContacts && frequentContacts.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Contacts fréquents</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {frequentContacts.slice(0, 3).map((contact: any) => (
-                    <Button
-                      key={contact.id}
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        form.setValue("toAccount", contact.phoneNumber);
-                      }}
-                    >
-                      <User className="mr-2" size={16} />
-                      {contact.name} - {contact.phoneNumber}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Transfer Limits */}
+          <TransferLimitsCard
+            dailyUsed={125000}
+            dailyLimit={500000}
+            monthlyUsed={2500000}
+            monthlyLimit={5000000}
+            operatorName={selectedFromOperator?.name}
+          />
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Frequent Contacts */}
+            {frequentContacts && frequentContacts.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center space-x-2">
+                    <Users size={16} />
+                    <span>Contacts fréquents</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {frequentContacts.slice(0, 2).map((contact: any) => (
+                      <div key={contact.id} className="flex items-center justify-between">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1 justify-start text-xs"
+                          onClick={() => {
+                            form.setValue("toAccount", contact.phoneNumber);
+                          }}
+                        >
+                          {contact.name}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addToFavorites(contact)}
+                        >
+                          <Star size={12} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recent Transfers */}
+            {recentTransactions && recentTransactions.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center space-x-2">
+                    <History size={16} />
+                    <span>Récents</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
+                    {recentTransactions.slice(0, 2).map((tx: any) => (
+                      <Button
+                        key={tx.id}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-xs"
+                        onClick={() => {
+                          if (tx.metadata?.toAccount) {
+                            form.setValue("toAccount", tx.metadata.toAccount);
+                          }
+                          if (tx.amount) {
+                            form.setValue("amount", tx.amount);
+                          }
+                        }}
+                      >
+                        {tx.amount} FCFA
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Transfer History (Compact) */}
+          <TransferHistory 
+            userId="current-user"
+            compact={true}
+            limit={5}
+          />
         </div>
       </div>
-      <MobileNav />
+      
+      {/* QR Code Modals */}
+      {showQRGenerator && (
+        <QRCodeGenerator
+          data={{
+            operatorId: "ipcash-wallet",
+            operatorName: "IPCASH Wallet",
+            accountNumber: "77 123 45 67",
+            accountName: "Mon Compte IPCASH"
+          }}
+          onClose={() => setShowQRGenerator(false)}
+        />
+      )}
+      
+      {showQRScanner && (
+        <QRCodeScanner
+          onScan={handleQRScan}
+          onClose={() => setShowQRScanner(false)}
+        />
+      )}
+      
+      <MobileNav currentPage="transfer" />
     </div>
   );
 }

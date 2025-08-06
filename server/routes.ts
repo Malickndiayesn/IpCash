@@ -643,6 +643,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get instant transfers for a user
+  app.get("/api/instant-transfers", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { limit = 50 } = req.query;
+      
+      const transfers = await storage.getUserInstantTransfers(userId, parseInt(limit as string));
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching instant transfers:", error);
+      res.status(500).json({ message: "Failed to fetch instant transfers" });
+    }
+  });
+
   // Create instant transfer
   app.post("/api/instant-transfer", isAuthenticated, async (req, res) => {
     try {
