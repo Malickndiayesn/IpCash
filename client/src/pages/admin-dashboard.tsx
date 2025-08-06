@@ -84,20 +84,6 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedKYC, setSelectedKYC] = useState<KYCDocument | null>(null);
 
-  // Temporarily disabled authentication check for testing
-  // if (!isLoading && !isAuthenticated) {
-  //   window.location.href = '/api/login';
-  //   return null;
-  // }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   // Fetch admin stats
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({
     queryKey: ["/api/admin/stats"],
@@ -118,6 +104,20 @@ export default function AdminDashboard() {
   const { data: kycDocuments, isLoading: kycLoading } = useQuery<KYCDocument[]>({
     queryKey: ["/api/admin/kyc/pending"],
   });
+
+  // Temporarily disabled authentication check for testing
+  // if (!isLoading && !isAuthenticated) {
+  //   window.location.href = '/api/login';
+  //   return null;
+  // }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // KYC approval mutation
   const kycMutation = useMutation({

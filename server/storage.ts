@@ -418,6 +418,66 @@ export class DatabaseStorage implements IStorage {
     return this.getUserMobileMoneyAccounts(userId);
   }
 
+  // Multi-Currency operations
+  async getAllCurrencies(): Promise<any[]> {
+    // Return mock currency data for now
+    return [
+      { id: 'XOF', name: 'Franc CFA BCEAO', code: 'XOF', symbol: 'FCFA' },
+      { id: 'USD', name: 'Dollar américain', code: 'USD', symbol: '$' },
+      { id: 'EUR', name: 'Euro', code: 'EUR', symbol: '€' },
+      { id: 'GBP', name: 'Livre sterling', code: 'GBP', symbol: '£' },
+      { id: 'CAD', name: 'Dollar canadien', code: 'CAD', symbol: 'C$' },
+    ];
+  }
+
+  async getAllExchangeRates(): Promise<Record<string, number>> {
+    // Return mock exchange rates (rates to convert from currency to XOF)
+    return {
+      'XOF': 1.0,     // Base currency
+      'USD': 600.0,   // 1 USD = 600 XOF
+      'EUR': 650.0,   // 1 EUR = 650 XOF  
+      'GBP': 750.0,   // 1 GBP = 750 XOF
+      'CAD': 450.0,   // 1 CAD = 450 XOF
+    };
+  }
+
+  async getUserMultiCurrencyAccounts(userId: string): Promise<any[]> {
+    // Return mock multi-currency accounts for now
+    return [
+      {
+        id: `${userId}-xof`,
+        userId: userId,
+        currencyId: 'XOF',
+        accountNumber: 'XOF-' + Date.now(),
+        balance: '150000.00',
+        isDefault: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: `${userId}-usd`,
+        userId: userId,
+        currencyId: 'USD',
+        accountNumber: 'USD-' + Date.now(),
+        balance: '250.00',
+        isDefault: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+    ];
+  }
+
+  async createMultiCurrencyAccount(accountData: any): Promise<any> {
+    // Return created account with generated data
+    const newAccount = {
+      id: `${accountData.userId}-${accountData.currencyId}-${Date.now()}`,
+      ...accountData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    return newAccount;
+  }
+
   // Admin operations
   async getAdminStats(): Promise<any> {
     try {

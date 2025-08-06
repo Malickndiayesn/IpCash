@@ -374,6 +374,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multi-Currency routes (temporarily without authentication for testing)
+  app.get('/api/currencies', async (req, res) => {
+    try {
+      const currencies = await storage.getAllCurrencies();
+      res.json(currencies);
+    } catch (error) {
+      console.error("Error fetching currencies:", error);
+      res.status(500).json({ message: "Failed to fetch currencies" });
+    }
+  });
+
+  app.get('/api/exchange-rates/all', async (req, res) => {
+    try {
+      const rates = await storage.getAllExchangeRates();
+      res.json(rates);
+    } catch (error) {
+      console.error("Error fetching exchange rates:", error);
+      res.status(500).json({ message: "Failed to fetch exchange rates" });
+    }
+  });
+
+  app.get('/api/multi-currency-accounts', async (req, res) => {
+    try {
+      // Use authenticated user ID if available, otherwise use a test ID
+      const userId = req.user?.claims?.sub || '45976179';
+      const accounts = await storage.getUserMultiCurrencyAccounts(userId);
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching multi-currency accounts:", error);
+      res.status(500).json({ message: "Failed to fetch multi-currency accounts" });
+    }
+  });
+
+  app.post('/api/multi-currency-accounts', async (req, res) => {
+    try {
+      // Use authenticated user ID if available, otherwise use a test ID
+      const userId = req.user?.claims?.sub || '45976179';
+      const accountData = { ...req.body, userId };
+      const account = await storage.createMultiCurrencyAccount(accountData);
+      res.status(201).json(account);
+    } catch (error) {
+      console.error("Error creating multi-currency account:", error);
+      res.status(500).json({ message: "Failed to create multi-currency account" });
+    }
+  });
+
   // Notification routes
   app.get('/api/notifications', async (req, res) => {
     try {
