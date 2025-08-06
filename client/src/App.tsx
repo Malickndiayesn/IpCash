@@ -30,6 +30,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Admin route accessible without authentication for testing */}
+      <Route path="/admin" component={AdminDashboard} />
+      
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
@@ -50,7 +53,6 @@ function Router() {
           <Route path="/multi-currency" component={MultiCurrency} />
           <Route path="/recharge" component={Recharge} />
           <Route path="/notifications" component={Notifications} />
-          <Route path="/admin" component={AdminDashboard} />
         </>
       )}
       <Route component={NotFound} />
