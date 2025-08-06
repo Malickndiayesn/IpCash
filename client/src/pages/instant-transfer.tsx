@@ -120,6 +120,19 @@ export default function InstantTransfer() {
     },
   });
 
+  const getOperatorIcon = (type: string) => {
+    switch (type) {
+      case 'wallet':
+        return <Wallet size={16} className="text-blue-500" />;
+      case 'mobile_money':
+        return <Smartphone size={16} className="text-green-500" />;
+      case 'bank':
+        return <Building2 size={16} className="text-gray-600" />;
+      default:
+        return <Wallet size={16} className="text-gray-400" />;
+    }
+  };
+
   const calculateFees = () => {
     if (!selectedFromOperator || !selectedToOperator) return "0.00";
     
@@ -128,19 +141,6 @@ export default function InstantTransfer() {
     const toFee = parseFloat(selectedToOperator.transferFee || "0");
     
     return (amount * (fromFee + toFee) / 100).toFixed(2);
-  };
-
-  const getOperatorIcon = (type: string) => {
-    switch (type) {
-      case 'mobile_money':
-        return <Smartphone className="text-blue-500" size={24} />;
-      case 'wallet':
-        return <Wallet className="text-green-500" size={24} />;
-      case 'bank':
-        return <Building2 className="text-purple-500" size={24} />;
-      default:
-        return <Wallet className="text-gray-500" size={24} />;
-    }
   };
 
   const onSubmit = (data: InstantTransferForm) => {
@@ -296,7 +296,7 @@ export default function InstantTransfer() {
             </CardContent>
           </Card>
         </div>
-        <MobileNav />
+        <MobileNav currentPage="transfer" />
       </div>
     );
   }
@@ -399,7 +399,7 @@ export default function InstantTransfer() {
             </CardContent>
           </Card>
         </div>
-        <MobileNav />
+        <MobileNav currentPage="transfer" />
       </div>
     );
   }
@@ -659,7 +659,7 @@ export default function InstantTransfer() {
           {/* Quick Actions */}
           <div className="grid grid-cols-2 gap-3">
             {/* Frequent Contacts */}
-            {frequentContacts && frequentContacts.length > 0 && (
+            {frequentContacts && Array.isArray(frequentContacts) && frequentContacts.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center space-x-2">
@@ -669,7 +669,7 @@ export default function InstantTransfer() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    {frequentContacts.slice(0, 2).map((contact: any) => (
+                    {Array.isArray(frequentContacts) ? frequentContacts.slice(0, 2).map((contact: any) => (
                       <div key={contact.id} className="flex items-center justify-between">
                         <Button
                           variant="ghost"
@@ -689,14 +689,14 @@ export default function InstantTransfer() {
                           <Star size={12} />
                         </Button>
                       </div>
-                    ))}
+                    )) : null}
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {/* Recent Transfers */}
-            {recentTransactions && recentTransactions.length > 0 && (
+            {recentTransactions && Array.isArray(recentTransactions) && recentTransactions.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center space-x-2">
@@ -706,7 +706,7 @@ export default function InstantTransfer() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
-                    {recentTransactions.slice(0, 2).map((tx: any) => (
+                    {Array.isArray(recentTransactions) ? recentTransactions.slice(0, 2).map((tx: any) => (
                       <Button
                         key={tx.id}
                         variant="ghost"
@@ -723,7 +723,7 @@ export default function InstantTransfer() {
                       >
                         {tx.amount} FCFA
                       </Button>
-                    ))}
+                    )) : null}
                   </div>
                 </CardContent>
               </Card>

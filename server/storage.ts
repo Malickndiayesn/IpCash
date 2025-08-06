@@ -368,7 +368,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(instantTransfers)
-      .where(eq(instantTransfers.userId, userId))
+      .where(eq(instantTransfers.fromUserId, userId))
       .orderBy(desc(instantTransfers.createdAt))
       .limit(limit);
   }

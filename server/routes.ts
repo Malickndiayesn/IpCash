@@ -95,6 +95,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Registered Operators API
+  app.get("/api/registered-operators", async (req, res) => {
+    try {
+      const operators = await storage.getRegisteredOperators();
+      res.json(operators);
+    } catch (error) {
+      console.error("Error fetching registered operators:", error);
+      res.status(500).json({ message: "Failed to fetch registered operators" });
+    }
+  });
+
+  // Mobile Money Accounts API
+  app.get("/api/mobile-money-accounts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const accounts = await storage.getUserMobileMoneyAccounts(userId);
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching mobile money accounts:", error);
+      res.status(500).json({ message: "Failed to fetch mobile money accounts" });
+    }
+  });
+
+  // Instant Transfer API
+  app.post("/api/instant-transfer", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const transferData = {
+        ...req.body,
+        fromUserId: userId,
+        status: 'completed',
+        fees: '500.00'
+      };
+      
+      const result = await storage.createInstantTransfer(transferData);
+      res.json(result);
+    } catch (error) {
+      console.error("Error creating instant transfer:", error);
+      res.status(500).json({ message: "Failed to create instant transfer" });
+    }
+  });
+
+  // Contacts API
+  app.get("/api/contacts/frequent", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const contacts = await storage.getFrequentContacts(userId);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching frequent contacts:", error);
+      res.status(500).json({ message: "Failed to fetch frequent contacts" });
+    }
+  });
+
+  // Transactions API
+  app.get("/api/transactions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const transactions = await storage.getUserTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
