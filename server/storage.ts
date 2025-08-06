@@ -401,6 +401,107 @@ export class DatabaseStorage implements IStorage {
   async getMobileMoneyAccounts(userId: string): Promise<MobileMoneyAccount[]> {
     return this.getUserMobileMoneyAccounts(userId);
   }
+
+  // Admin operations
+  async getAdminStats(): Promise<any> {
+    const totalUsers = await db.select({ count: sql`count(*)` }).from(users);
+    const totalTransactions = await db.select({ count: sql`count(*)` }).from(transactions);
+    const pendingKYC = await db.select({ count: sql`count(*)` }).from(kycDocuments).where(eq(kycDocuments.verificationStatus, 'pending'));
+    const activeCards = await db.select({ count: sql`count(*)` }).from(cards).where(eq(cards.isActive, true));
+    
+    return {
+      totalUsers: Number(totalUsers[0]?.count || 0),
+      activeUsers: Number(totalUsers[0]?.count || 0), // Simplified - same as total for now
+      totalTransactions: Number(totalTransactions[0]?.count || 0),
+      totalAmount: "0.00", // Placeholder - could calculate sum
+      pendingKYC: Number(pendingKYC[0]?.count || 0),
+      activeCards: Number(activeCards[0]?.count || 0)
+    };
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).limit(100);
+  }
+
+  async getAllTransactions(): Promise<Transaction[]> {
+    return await db.select().from(transactions).orderBy(desc(transactions.createdAt)).limit(100);
+  }
+
+  async getPendingKYCDocuments(): Promise<any[]> {
+    return await db
+      .select({
+        id: kycDocuments.id,
+        userId: kycDocuments.userId,
+        documentType: kycDocuments.documentType,
+        frontImageUrl: kycDocuments.frontImageUrl,
+        status: kycDocuments.verificationStatus,
+        createdAt: kycDocuments.createdAt,
+        userFirstName: users.firstName,
+        userLastName: users.lastName,
+        userEmail: users.email
+      })
+      .from(kycDocuments)
+      .leftJoin(users, eq(kycDocuments.userId, users.id))
+      .where(eq(kycDocuments.verificationStatus, 'pending'))
+      .limit(50);
+  }
+
+  async suspendUser(userId: string, suspend: boolean): Promise<void> {
+    // For now, we'll just log this - in a real app you'd update user status
+    console.log(`${suspend ? 'Suspending' : 'Reactivating'} user ${userId}`);
+  }
+
+  async updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument> {
+    const updateData: any = { verificationStatus: status, updatedAt: new Date() };
+    if (rejectionReason) {
+      updateData.rejectionReason = rejectionReason;
+    }
+    
+    const [updated] = await db
+      .update(kycDocuments)
+      .set(updateData)
+      .where(eq(kycDocuments.id, documentId))
+      .returning();
+    
+    return updated;
+  }
+
+  async exportData(type: string): Promise<string> {
+    let headers = '';
+    let rows: string[] = [];
+    
+    switch (type) {
+      case 'users':
+        headers = 'ID,Email,First Name,Last Name,Created At\n';
+        const users = await this.getAllUsers();
+        rows = users.map(user => 
+          `${user.id},${user.email},${user.firstName},${user.lastName},${user.createdAt}`
+        );
+        break;
+        
+      case 'transactions':
+        headers = 'ID,From User,To User,Amount,Currency,Status,Type,Created At\n';
+        const transactions = await this.getAllTransactions();
+        rows = transactions.map(tx => 
+          `${tx.id},${tx.fromUserId},${tx.toUserId},${tx.amount},${tx.currency},${tx.status},${tx.type},${tx.createdAt}`
+        );
+        break;
+        
+      case 'kyc':
+        headers = 'ID,User ID,Document Type,Status,Created At\n';
+        const kycDocs = await db.select().from(kycDocuments).limit(1000);
+        rows = kycDocs.map(doc => 
+          `${doc.id},${doc.userId},${doc.documentType},${doc.status},${doc.createdAt}`
+        );
+        break;
+        
+      default:
+        headers = 'Type,Count\n';
+        rows = ['Unknown export type,0'];
+    }
+    
+    return headers + rows.join('\n');
+  }
 }
 
 export const storage = new DatabaseStorage();

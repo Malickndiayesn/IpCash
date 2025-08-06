@@ -161,6 +161,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin routes (protected)
+  app.get("/api/admin/stats", isAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/users", isAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/admin/transactions", isAuthenticated, async (req, res) => {
+    try {
+      const transactions = await storage.getAllTransactions();
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      res.status(500).json({ message: "Failed to fetch transactions" });
+    }
+  });
+
+  app.get("/api/admin/kyc/pending", isAuthenticated, async (req, res) => {
+    try {
+      const pendingKYC = await storage.getPendingKYCDocuments();
+      res.json(pendingKYC);
+    } catch (error) {
+      console.error("Error fetching pending KYC:", error);
+      res.status(500).json({ message: "Failed to fetch pending KYC documents" });
+    }
+  });
+
+  app.put("/api/admin/kyc/:documentId", isAuthenticated, async (req, res) => {
+    try {
+      const { documentId } = req.params;
+      const { status, rejectionReason } = req.body;
+      
+      const updatedDocument = await storage.updateKycDocumentStatus(documentId, status, rejectionReason);
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error("Error updating KYC document:", error);
+      res.status(500).json({ message: "Failed to update KYC document" });
+    }
+  });
+
+  app.put("/api/admin/users/:userId/suspend", isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { suspend } = req.body;
+      
+      await storage.suspendUser(userId, suspend);
+      res.json({ success: true, suspended: suspend });
+    } catch (error) {
+      console.error("Error suspending user:", error);
+      res.status(500).json({ message: "Failed to suspend user" });
+    }
+  });
+
+  app.get("/api/admin/export/:type", isAuthenticated, async (req, res) => {
+    try {
+      const { type } = req.params;
+      const csvData = await storage.exportData(type);
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${type}_export_${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csvData);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
