@@ -103,9 +103,12 @@ export default function Recharge() {
         title: "Recharge initiée",
         description: "Votre demande de recharge a été traitée avec succès",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      setLocation("/dashboard");
+      // Add delay to prevent DOM manipulation conflicts
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+        setLocation("/dashboard");
+      }, 100);
     },
     onError: (error) => {
       toast({

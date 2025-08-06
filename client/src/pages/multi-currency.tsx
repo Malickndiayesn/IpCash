@@ -34,16 +34,19 @@ export default function MultiCurrency() {
     isDefault: false,
   });
 
-  const { data: currencies } = useQuery<Currency[]>({
+  const { data: currencies, isLoading: currenciesLoading } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
+    staleTime: 300000, // 5 minutes
   });
 
-  const { data: userAccounts, refetch: refetchAccounts } = useQuery<MultiCurrencyAccount[]>({
+  const { data: userAccounts, refetch: refetchAccounts, isLoading: accountsLoading } = useQuery<MultiCurrencyAccount[]>({
     queryKey: ["/api/multi-currency-accounts"],
+    staleTime: 60000, // 1 minute
   });
 
-  const { data: exchangeRates } = useQuery<Record<string, number>>({
+  const { data: exchangeRates, isLoading: ratesLoading } = useQuery<Record<string, number>>({
     queryKey: ["/api/exchange-rates/all"],
+    staleTime: 30000, // 30 seconds
   });
 
   const createAccountMutation = useMutation({
@@ -55,9 +58,12 @@ export default function MultiCurrency() {
         title: "Compte créé",
         description: "Votre nouveau compte multi-devises a été créé",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-currency-accounts"] });
-      setShowAddForm(false);
-      setFormData({ currencyId: "", isDefault: false });
+      // Use a timeout to prevent DOM manipulation conflicts
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/multi-currency-accounts"] });
+        setShowAddForm(false);
+        setFormData({ currencyId: "", isDefault: false });
+      }, 100);
     },
     onError: (error) => {
       toast({
@@ -102,6 +108,17 @@ export default function MultiCurrency() {
     
     return total.toFixed(2);
   };
+
+  // Show loading state while data is being fetched
+  if (currenciesLoading || accountsLoading || ratesLoading) {
+    return (
+      <div className="mobile-container">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mobile-container">

@@ -576,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amount.toString(),
         description: description || "Recharge de compte",
         recipientType: "internal" as const,
-        status: status as const,
+        status: status,
         metadata: { 
           rechargeMethod: method,
           paymentGateway: paymentGateway || null,

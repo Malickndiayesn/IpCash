@@ -32,12 +32,14 @@ export default function CurrencyExchange() {
     type: "market" as "market" | "limit",
   });
 
-  const { data: currencies } = useQuery<Currency[]>({
+  const { data: currencies, isLoading: currenciesLoading } = useQuery<Currency[]>({
     queryKey: ["/api/currencies"],
+    staleTime: 300000, // 5 minutes
   });
 
-  const { data: userAccounts } = useQuery<MultiCurrencyAccount[]>({
+  const { data: userAccounts, isLoading: accountsLoading } = useQuery<MultiCurrencyAccount[]>({
     queryKey: ["/api/multi-currency-accounts"],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: exchangeRate, isLoading: isLoadingRate } = useQuery<{rate: number}>({
@@ -59,9 +61,12 @@ export default function CurrencyExchange() {
         title: "Échange effectué",
         description: "Votre échange de devises a été effectué avec succès",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/currency-exchanges"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/multi-currency-accounts"] });
-      setLocation("/dashboard");
+      // Use a timeout to prevent DOM manipulation conflicts
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/currency-exchanges"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/multi-currency-accounts"] });
+        setLocation("/dashboard");
+      }, 100);
     },
     onError: (error) => {
       toast({
@@ -71,6 +76,17 @@ export default function CurrencyExchange() {
       });
     },
   });
+
+  // Show loading state while data is being fetched
+  if (currenciesLoading || accountsLoading) {
+    return (
+      <div className="mobile-container">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
