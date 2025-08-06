@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/lib/i18n";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminTest from "@/pages/admin-test";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
@@ -30,11 +31,19 @@ function Router() {
 
   return (
     <Switch>
-      {/* Admin route accessible without authentication for testing */}
-      <Route path="/admin" component={AdminDashboard} />
-      
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
+      {isLoading ? (
+        <Route path="*">
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </Route>
+      ) : !isAuthenticated ? (
+        <>
+          <Route path="/" component={Landing} />
+          {/* Admin routes accessible without authentication for testing */}
+          <Route path="/admin" component={AdminTest} />
+          <Route path="/admin-full" component={AdminDashboard} />
+        </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />
@@ -53,6 +62,9 @@ function Router() {
           <Route path="/multi-currency" component={MultiCurrency} />
           <Route path="/recharge" component={Recharge} />
           <Route path="/notifications" component={Notifications} />
+          {/* Admin routes accessible with authentication */}
+          <Route path="/admin" component={AdminTest} />
+          <Route path="/admin-full" component={AdminDashboard} />
         </>
       )}
       <Route component={NotFound} />
