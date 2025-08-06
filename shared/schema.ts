@@ -189,14 +189,17 @@ export const contacts = pgTable("contacts", {
 export const kycDocuments = pgTable("kyc_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
-  documentType: varchar("document_type").notNull(), // 'id_card', 'passport', 'driver_license'
-  documentNumber: varchar("document_number").notNull(),
-  frontImageUrl: varchar("front_image_url"),
-  backImageUrl: varchar("back_image_url"),
-  verificationStatus: varchar("verification_status").default("pending"), // 'pending', 'approved', 'rejected'
-  verifiedAt: timestamp("verified_at"),
+  documentType: varchar("document_type").notNull(), // 'cni', 'passport', 'proof_address', 'selfie'
+  documentUrl: varchar("document_url").notNull(),
+  status: varchar("status").default("pending"), // 'pending', 'approved', 'rejected'
   rejectionReason: text("rejection_reason"),
+  documentNumber: varchar("document_number"), // CNI or passport number
+  expiryDate: timestamp("expiry_date"), // Document expiry date
+  verificationScore: decimal("verification_score", { precision: 5, scale: 2 }), // AI verification score
+  extractedData: jsonb("extracted_data"), // OCR extracted data
+  verifiedAt: timestamp("verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Savings goals and automatic savings
@@ -471,6 +474,31 @@ export const insertInstantTransferSchema = createInsertSchema(instantTransfers).
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Account = typeof accounts.$inferSelect;
+export type InsertAccount = z.infer<typeof insertAccountSchema>;
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
+export type Card = typeof cards.$inferSelect;
+export type InsertCard = z.infer<typeof insertCardSchema>;
+
+export type MobileMoneyAccount = typeof mobileMoneyAccounts.$inferSelect;
+export type InsertMobileMoneyAccount = z.infer<typeof insertMobileMoneyAccountSchema>;
+
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = z.infer<typeof insertContactSchema>;
+
+export type KycDocument = typeof kycDocuments.$inferSelect;
+export type InsertKycDocument = z.infer<typeof insertKycDocumentSchema>;
+
+export type RegisteredOperator = typeof registeredOperators.$inferSelect;
+export type InsertRegisteredOperator = z.infer<typeof insertRegisteredOperatorSchema>;
+
+export type InstantTransfer = typeof instantTransfers.$inferSelect;
+export type InsertInstantTransfer = z.infer<typeof insertInstantTransferSchema>;
 
 // Account types
 export type Account = typeof accounts.$inferSelect;

@@ -7,6 +7,7 @@ import {
   contacts,
   registeredOperators,
   instantTransfers,
+  kycDocuments,
   type User,
   type UpsertUser,
   type Account,
@@ -23,6 +24,8 @@ import {
   type InsertRegisteredOperator,
   type InstantTransfer,
   type InsertInstantTransfer,
+  type KycDocument,
+  type InsertKycDocument,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -67,6 +70,11 @@ export interface IStorage {
   createInstantTransfer(data: InsertInstantTransfer): Promise<InstantTransfer>;
   updateInstantTransferStatus(id: string, status: string): Promise<void>;
   getUserInstantTransfers(userId: string, limit?: number): Promise<InstantTransfer[]>;
+  
+  // KYC operations
+  getKycDocuments(userId: string): Promise<KycDocument[]>;
+  createKycDocument(document: InsertKycDocument): Promise<KycDocument>;
+  updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -300,67 +308,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserInstantTransfers(userId: string, limit: number = 50): Promise<InstantTransfer[]> {
-    // Pour l'instant, on retourne des données simulées
-    return [
-      {
-        id: "it-1",
-        transactionId: "tx-1",
-        fromOperatorId: "ipcash-wallet",
-        toOperatorId: "orange-money",
-        fromAccount: userId,
-        toAccount: "77 123 45 67",
-        amount: "25000.00",
-        transferFee: "125.00",
-        exchangeRate: "1.000000",
-        status: "completed",
-        externalTransactionId: "OM123456789",
-        errorMessage: null,
-        qrCodeData: null,
-        transferMethod: "manual",
-        processedAt: new Date(Date.now() - 3600000), // 1 hour ago
-        createdAt: new Date(Date.now() - 3600000),
-      },
-      {
-        id: "it-2",
-        transactionId: "tx-2",
-        fromOperatorId: "wave-senegal",
-        toOperatorId: "ipcash-wallet",
-        fromAccount: "77 987 65 43",
-        toAccount: userId,
-        amount: "50000.00",
-        transferFee: "0.00",
-        exchangeRate: "1.000000",
-        status: "completed",
-        externalTransactionId: "WAVE987654321",
-        errorMessage: null,
-        qrCodeData: {
-          type: "ipcash_transfer",
-          amount: "50000",
-          description: "Paiement facture"
-        },
-        transferMethod: "qr_code",
-        processedAt: new Date(Date.now() - 7200000), // 2 hours ago
-        createdAt: new Date(Date.now() - 7200000),
-      },
-      {
-        id: "it-3",
-        transactionId: "tx-3",
-        fromOperatorId: "ipcash-wallet",
-        toOperatorId: "wave-senegal",
-        fromAccount: userId,
-        toAccount: "77 555 44 33",
-        amount: "15000.00",
-        transferFee: "75.00",
-        exchangeRate: "1.000000",
-        status: "pending",
-        externalTransactionId: null,
-        errorMessage: null,
-        qrCodeData: null,
-        transferMethod: "manual",
-        processedAt: null,
-        createdAt: new Date(Date.now() - 300000), // 5 minutes ago
-      }
-    ].slice(0, limit);
+    return await db
+      .select()
+      .from(instantTransfers)
+      .where(eq(instantTransfers.userId, userId))
+      .orderBy(desc(instantTransfers.createdAt))
+      .limit(limit);
+  }
+
+  // KYC operations
+  async getKycDocuments(userId: string): Promise<KycDocument[]> {
+    return await db.select().from(kycDocuments).where(eq(kycDocuments.userId, userId));
+  }
+
+  async createKycDocument(document: InsertKycDocument): Promise<KycDocument> {
+    const [kycDocument] = await db.insert(kycDocuments).values(document).returning();
+    return kycDocument;
+  }
+
+  async updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument> {
+    const [kycDocument] = await db
+      .update(kycDocuments)
+      .set({ 
+        status, 
+        rejectionReason,
+        verifiedAt: status === 'approved' ? new Date() : null,
+        updatedAt: new Date()
+      })
+      .where(eq(kycDocuments.id, documentId))
+      .returning();
+    return kycDocument;
+  }
+
+  // Helper method to get mobile money accounts (alias for getUserMobileMoneyAccounts)
+  async getMobileMoneyAccounts(userId: string): Promise<MobileMoneyAccount[]> {
+    return this.getUserMobileMoneyAccounts(userId);
   }
 }
 
