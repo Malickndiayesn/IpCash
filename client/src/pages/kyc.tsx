@@ -52,45 +52,39 @@ export default function KYCPage() {
     placeOfBirth: ""
   });
 
-  // Mock KYC status data - will be replaced with real API data
+  // Calculate completion status based on document selection and steps
+  const getCompletionPercentage = () => {
+    let percentage = 0;
+    if (documentType) percentage += 25; // Document type selected
+    if (currentStep >= 2) percentage += 25; // Information filled
+    if (currentStep >= 3) percentage += 25; // Ready to capture
+    // The remaining 25% will be added when photos are actually captured and uploaded
+    return percentage;
+  };
+
   const mockKycStatus = {
-    status: 'pending',
-    completionPercentage: 33,
-    requiredDocuments: [
-      {
-        type: 'cni',
-        name: 'Carte Nationale d\'Identité',
-        status: 'none', // none, pending, approved, rejected
-        uploadedAt: null
-      },
-      {
-        type: 'passport',
-        name: 'Passeport',
-        status: 'none',
-        uploadedAt: null
-      },
-      {
-        type: 'selfie',
-        name: 'Selfie avec document',
-        status: 'none',
-        uploadedAt: null
-      }
-    ],
+    status: documentType ? 'in_progress' : 'none',
+    completionPercentage: getCompletionPercentage(),
+    currentDocument: documentType,
+    currentStep,
     benefits: [
       {
         title: 'Virements illimités',
         description: 'Effectuez des virements sans restriction de montant',
-        unlocked: false
+        unlocked: false,
+        requiredStep: 'document_verification'
       },
       {
         title: 'Carte virtuelle premium',
         description: 'Accès aux cartes Visa premium avec assurances',
-        unlocked: false
+        unlocked: false,
+        requiredStep: 'selfie_verification'
       },
       {
         title: 'Crédit et épargne',
         description: 'Solutions de crédit et comptes d\'épargne',
-        unlocked: false
+        unlocked: false,
+        requiredStep: 'full_kyc_completion'
       }
     ]
   };
@@ -247,113 +241,93 @@ export default function KYCPage() {
           <Card className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">Progression</h3>
-                <Badge className={getStatusColor(mockKycStatus.status)}>
+                <h3 className="text-lg font-semibold text-gray-900">Progression KYC</h3>
+                <Badge className={`${mockKycStatus.completionPercentage > 0 ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'}`}>
                   {mockKycStatus.completionPercentage}% terminé
                 </Badge>
               </div>
               
               <Progress value={mockKycStatus.completionPercentage} className="mb-4" />
               
-              {mockKycStatus.status === 'pending' && (
-                <div className="bg-yellow-50 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    Vos documents sont en cours de vérification. Vous recevrez une notification une fois la vérification terminée.
+              <div className="space-y-2 text-sm">
+                <div className={`flex items-center space-x-2 ${documentType ? 'text-green-600' : 'text-gray-400'}`}>
+                  {documentType ? <CheckCircle size={16} /> : <Clock size={16} />}
+                  <span>Sélection du document d'identité</span>
+                </div>
+                <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {currentStep >= 2 ? <CheckCircle size={16} /> : <Clock size={16} />}
+                  <span>Saisie des informations</span>
+                </div>
+                <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
+                  {currentStep >= 3 ? <CheckCircle size={16} /> : <Clock size={16} />}
+                  <span>Capture photo du document</span>
+                </div>
+                <div className={`flex items-center space-x-2 text-gray-400`}>
+                  <Clock size={16} />
+                  <span>Selfie avec document</span>
+                </div>
+              </div>
+              
+              {mockKycStatus.status === 'in_progress' && documentType && (
+                <div className="bg-blue-50 rounded-lg p-3 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="text-blue-600" size={16} />
+                    <p className="text-sm text-blue-800 font-medium">
+                      Vérification en cours
+                    </p>
+                  </div>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Document sélectionné: {documentType === 'cni' ? 'Carte Nationale d\'Identité' : 'Passeport'}
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Required Documents */}
-          <Card className="shadow-sm">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents requis</h3>
+          {/* Selfie Capture Section */}
+          <Card className="shadow-sm border-l-4 border-l-orange-500">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Camera className="text-orange-500" size={20} />
+                <span>Selfie avec document</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Prenez un selfie en tenant votre document d'identité près de votre visage pour la vérification croisée.
+              </p>
               
-              <div className="space-y-4">
-                {mockKycStatus.requiredDocuments.map((doc, index) => {
-                  const StatusIcon = getStatusIcon(doc.status);
-                  return (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getStatusColor(doc.status)}`}>
-                            <StatusIcon size={20} />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{doc.name}</h4>
-                            {doc.uploadedAt && (
-                              <p className="text-sm text-gray-500">
-                                Téléchargé le {new Date(doc.uploadedAt).toLocaleDateString('fr-FR')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge className={getStatusColor(doc.status)}>
-                          {getStatusLabel(doc.status)}
-                        </Badge>
-                      </div>
-
-                      {doc.status === 'none' && (
-                        <div className="space-y-2">
-                          {(doc.type === 'cni' || doc.type === 'passport') ? (
-                            <Button 
-                              size="sm" 
-                              className="w-full flex items-center space-x-2"
-                              onClick={() => {
-                                setDocumentType(doc.type as "cni" | "passport");
-                                setCurrentStep(1);
-                              }}
-                            >
-                              <Camera size={16} />
-                              <span>Photographier {doc.type === 'cni' ? 'CNI' : 'Passeport'}</span>
-                            </Button>
-                          ) : doc.type === 'selfie' ? (
-                            <Button 
-                              size="sm" 
-                              className="w-full flex items-center space-x-2"
-                              onClick={handleCaptureSelfie}
-                            >
-                              <Camera size={16} />
-                              <span>Prendre un selfie</span>
-                            </Button>
-                          ) : (
-                            <Button 
-                              size="sm" 
-                              className="w-full flex items-center space-x-2"
-                              onClick={() => {
-                                setDocumentType(doc.type as "cni" | "passport");
-                                setCurrentStep(1);
-                              }}
-                            >
-                              <Upload size={16} />
-                              <span>Télécharger</span>
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
-                      {doc.status === 'rejected' && (
-                        <div className="space-y-2">
-                          <div className="bg-red-50 rounded-lg p-3">
-                            <p className="text-sm text-red-800">
-                              Document rejeté: qualité insuffisante ou informations illisibles
-                            </p>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="w-full flex items-center space-x-2"
-                          >
-                            <Upload size={16} />
-                            <span>Télécharger à nouveau</span>
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">
+                  Instructions pour le selfie :
+                </h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Tenez votre document près de votre visage</li>
+                  <li>• Assurez-vous que votre visage est bien visible</li>
+                  <li>• Le document doit être lisible sur la photo</li>
+                  <li>• Évitez les lunettes de soleil ou masques</li>
+                  <li>• Utilisez un éclairage naturel si possible</li>
+                </ul>
               </div>
+
+              {documentType ? (
+                <Button
+                  onClick={handleCaptureSelfie}
+                  className="w-full flex items-center space-x-2 bg-orange-500 hover:bg-orange-600"
+                >
+                  <Camera size={16} />
+                  <span>Prendre un selfie avec {documentType === 'cni' ? 'CNI' : 'Passeport'}</span>
+                </Button>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="text-yellow-600" size={16} />
+                    <p className="text-sm text-yellow-800">
+                      Veuillez d'abord sélectionner votre type de document ci-dessus
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -382,65 +356,98 @@ export default function KYCPage() {
             </div>
           )}
 
-          {/* Document Type Selection */}
-          {documentType && currentStep === 1 && (
-            <Card className="shadow-sm border-l-4 border-l-primary">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Camera className="text-primary" size={20} />
-                  <span>Choisir le type de document</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Sélectionnez le type de document d'identité que vous souhaitez utiliser pour votre vérification.
-                </p>
-                
-                <div className="grid grid-cols-1 gap-3">
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 flex items-start space-x-4 hover:border-primary"
-                    onClick={() => handleDocumentTypeSelection("cni")}
-                  >
-                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <CreditCard className="text-blue-600" size={24} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h3 className="font-semibold text-gray-900">Carte Nationale d'Identité</h3>
-                      <p className="text-sm text-gray-600">CNI ivoirienne ou d'un pays UEMOA</p>
-                      <p className="text-xs text-green-600 mt-1">✓ Recommandé • Traitement rapide</p>
-                    </div>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="h-auto p-4 flex items-start space-x-4 hover:border-primary"
-                    onClick={() => handleDocumentTypeSelection("passport")}
-                  >
-                    <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                      <FileText className="text-purple-600" size={24} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h3 className="font-semibold text-gray-900">Passeport</h3>
-                      <p className="text-sm text-gray-600">Passeport biométrique valide</p>
-                      <p className="text-xs text-blue-600 mt-1">✓ International • Très sécurisé</p>
-                    </div>
-                  </Button>
-                </div>
+          {/* Document Type Selection - Always visible */}
+          <Card className="shadow-sm border-l-4 border-l-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="text-primary" size={20} />
+                <span>Choisir votre document d'identité</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Sélectionnez le type de document d'identité que vous souhaitez utiliser pour votre vérification KYC.
+              </p>
+              
+              <div className="grid grid-cols-1 gap-3">
+                <Button
+                  variant={documentType === "cni" ? "default" : "outline"}
+                  className="h-auto p-4 flex items-start space-x-4 hover:border-primary transition-all"
+                  onClick={() => {
+                    setDocumentType("cni");
+                    setCurrentStep(2);
+                  }}
+                >
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    documentType === "cni" ? "bg-white/20" : "bg-blue-50"
+                  }`}>
+                    <CreditCard className={documentType === "cni" ? "text-white" : "text-blue-600"} size={24} />
+                  </div>
+                  <div className="text-left flex-1">
+                    <h3 className={`font-semibold ${documentType === "cni" ? "text-white" : "text-gray-900"}`}>
+                      Carte Nationale d'Identité
+                    </h3>
+                    <p className={`text-sm ${documentType === "cni" ? "text-white/80" : "text-gray-600"}`}>
+                      CNI ivoirienne ou d'un pays UEMOA
+                    </p>
+                    <p className={`text-xs mt-1 font-medium ${
+                      documentType === "cni" ? "text-yellow-200" : "text-green-600"
+                    }`}>
+                      ✓ Recommandé • Traitement rapide
+                    </p>
+                  </div>
+                  {documentType === "cni" && (
+                    <CheckCircle className="text-white" size={20} />
+                  )}
+                </Button>
 
                 <Button
-                  variant="ghost"
+                  variant={documentType === "passport" ? "default" : "outline"}
+                  className="h-auto p-4 flex items-start space-x-4 hover:border-primary transition-all"
                   onClick={() => {
-                    setDocumentType("");
-                    setCurrentStep(1);
+                    setDocumentType("passport");
+                    setCurrentStep(2);
                   }}
-                  className="w-full"
                 >
-                  Annuler
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    documentType === "passport" ? "bg-white/20" : "bg-purple-50"
+                  }`}>
+                    <FileText className={documentType === "passport" ? "text-white" : "text-purple-600"} size={24} />
+                  </div>
+                  <div className="text-left flex-1">
+                    <h3 className={`font-semibold ${documentType === "passport" ? "text-white" : "text-gray-900"}`}>
+                      Passeport
+                    </h3>
+                    <p className={`text-sm ${documentType === "passport" ? "text-white/80" : "text-gray-600"}`}>
+                      Passeport biométrique valide
+                    </p>
+                    <p className={`text-xs mt-1 font-medium ${
+                      documentType === "passport" ? "text-yellow-200" : "text-blue-600"
+                    }`}>
+                      ✓ International • Très sécurisé
+                    </p>
+                  </div>
+                  {documentType === "passport" && (
+                    <CheckCircle className="text-white" size={20} />
+                  )}
                 </Button>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              {documentType && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="text-green-600" size={16} />
+                    <p className="text-sm text-green-800 font-medium">
+                      {documentType === "cni" ? "CNI sélectionnée" : "Passeport sélectionné"}
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-700 mt-1">
+                    Vous pouvez maintenant remplir les informations du document
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Document Information Form */}
           {documentType && currentStep === 2 && (
@@ -565,7 +572,7 @@ export default function KYCPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Camera className="text-green-500" size={20} />
-                  <span>Photographier le document</span>
+                  <span>Photographier votre {documentType === 'cni' ? 'CNI' : 'Passeport'}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -574,12 +581,27 @@ export default function KYCPage() {
                     Instructions pour une photo de qualité :
                   </h4>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Assurez-vous d'avoir un bon éclairage</li>
-                    <li>• Placez le document sur une surface plane</li>
-                    <li>• Évitez les reflets et les ombres</li>
-                    <li>• Cadrez bien tout le document</li>
-                    <li>• Vérifiez que les textes sont lisibles</li>
+                    <li>• Assurez-vous d'avoir un bon éclairage naturel</li>
+                    <li>• Placez {documentType === 'cni' ? 'la CNI' : 'le passeport'} sur une surface plane</li>
+                    <li>• Évitez les reflets et les ombres portées</li>
+                    <li>• Cadrez bien tout le document dans l'image</li>
+                    <li>• Vérifiez que tous les textes sont parfaitement lisibles</li>
+                    {documentType === 'passport' && (
+                      <li>• Ouvrez le passeport à la page d'identité avec votre photo</li>
+                    )}
                   </ul>
+                </div>
+
+                <div className="bg-green-50 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="text-green-600" size={16} />
+                    <p className="text-sm text-green-800 font-medium">
+                      Photo sécurisée et chiffrée
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-700 mt-1">
+                    Vos données sont protégées selon les normes bancaires internationales
+                  </p>
                 </div>
 
                 <div className="flex space-x-2">
@@ -588,14 +610,14 @@ export default function KYCPage() {
                     onClick={() => setCurrentStep(2)}
                     className="flex-1"
                   >
-                    Retour
+                    Modifier les infos
                   </Button>
                   <Button
                     onClick={handleCaptureDocument}
-                    className="flex-1"
+                    className="flex-1 bg-green-600 hover:bg-green-700"
                   >
                     <Camera className="mr-2" size={16} />
-                    Prendre la photo
+                    Photographier
                   </Button>
                 </div>
               </CardContent>
