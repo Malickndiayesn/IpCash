@@ -1,7 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { initializeNotificationService, getNotificationService } from "./notificationService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -10,7 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user?.claims?.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -372,6 +374,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification routes
+  app.get('/api/notifications', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const notifications = await storage.getUserNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch('/api/notifications/:notificationId/read', isAuthenticated, async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      await storage.markNotificationAsRead(notificationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
+    }
+  });
+
+  app.patch('/api/notifications/read-all', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
+    }
+  });
+
+  app.delete('/api/notifications/:notificationId', isAuthenticated, async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      await storage.deleteNotification(notificationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
+    }
+  });
+
+  // Notification preferences
+  app.get('/api/notification-preferences', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const preferences = await storage.getUserNotificationPreferences(userId);
+      res.json(preferences || {});
+    } catch (error) {
+      console.error("Error fetching notification preferences:", error);
+      res.status(500).json({ message: "Failed to fetch notification preferences" });
+    }
+  });
+
+  app.patch('/api/notification-preferences', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const preferences = await storage.updateNotificationPreferences(userId, req.body);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
+      res.status(500).json({ message: "Failed to update notification preferences" });
+    }
+  });
+
+  // Test notification endpoint (for development)
+  app.post('/api/test-notification', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const notificationService = getNotificationService();
+      
+      if (notificationService) {
+        await notificationService.sendTransactionNotification(
+          userId,
+          'received',
+          '1000',
+          'FCFA',
+          'Test User'
+        );
+        res.json({ success: true, message: 'Test notification sent' });
+      } else {
+        res.status(503).json({ message: 'Notification service not available' });
+      }
+    } catch (error) {
+      console.error("Error sending test notification:", error);
+      res.status(500).json({ message: "Failed to send test notification" });
+    }
+  });
+
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket notification service
+  initializeNotificationService(httpServer);
+  console.log('Real-time notification service initialized');
+  
   return httpServer;
 }

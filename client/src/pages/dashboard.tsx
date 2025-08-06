@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BalanceCard } from "@/components/ui/balance-card";
 import { TransactionItem } from "@/components/ui/transaction-item";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import NotificationCenter from "@/components/NotificationCenter";
 import { 
   Bell, 
   Settings, 
@@ -97,12 +98,9 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="text-white relative">
-                <Bell size={20} />
-                <div className="absolute -top-2 -right-2 w-5 h-5 bg-accent rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs font-bold">3</span>
-                </div>
-              </button>
+              <div className="text-white">
+                <NotificationCenter />
+              </div>
               <button onClick={() => setLocation('/profile')} className="text-white">
                 <Settings size={20} />
               </button>

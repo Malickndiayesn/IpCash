@@ -627,6 +627,42 @@ export const operationAnalytics = pgTable("operation_analytics", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Real-time notifications table
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: varchar("type").notNull(), // 'transaction', 'security', 'system', 'promo'
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  data: jsonb("data"), // Additional notification data (transaction details, etc.)
+  priority: varchar("priority").default("normal"), // 'low', 'normal', 'high', 'urgent'
+  isRead: boolean("is_read").default(false),
+  isDelivered: boolean("is_delivered").default(false),
+  deliveryChannel: varchar("delivery_channel").default("in_app"), // 'in_app', 'push', 'email', 'sms'
+  scheduledFor: timestamp("scheduled_for"),
+  deliveredAt: timestamp("delivered_at"),
+  readAt: timestamp("read_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Notification preferences
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  transactionAlerts: boolean("transaction_alerts").default(true),
+  securityAlerts: boolean("security_alerts").default(true),
+  marketingNotifications: boolean("marketing_notifications").default(false),
+  emailNotifications: boolean("email_notifications").default(true),
+  smsNotifications: boolean("sms_notifications").default(false),
+  pushNotifications: boolean("push_notifications").default(true),
+  quietHoursStart: varchar("quiet_hours_start").default("22:00"),
+  quietHoursEnd: varchar("quiet_hours_end").default("08:00"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Insert schemas for new admin tables
 export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
   id: true,
@@ -644,6 +680,18 @@ export const insertOperationAnalyticsSchema = createInsertSchema(operationAnalyt
   createdAt: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // New admin types
 export type UserRole = typeof userRoles.$inferSelect;
 export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
@@ -651,3 +699,9 @@ export type UserRoleAssignment = typeof userRoleAssignments.$inferSelect;
 export type InsertUserRoleAssignment = z.infer<typeof insertUserRoleAssignmentSchema>;
 export type OperationAnalytics = typeof operationAnalytics.$inferSelect;
 export type InsertOperationAnalytics = z.infer<typeof insertOperationAnalyticsSchema>;
+
+// Notification types
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
