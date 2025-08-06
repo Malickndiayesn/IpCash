@@ -6,6 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
@@ -18,10 +20,23 @@ import {
   Award, 
   Lock, 
   Upload,
-  AlertCircle 
+  AlertCircle,
+  Eye,
+  EyeOff,
+  MapPin,
+  Calendar,
+  User,
+  Phone,
+  Mail,
+  Home,
+  Star,
+  Zap,
+  Info,
+  Lightbulb
 } from "lucide-react";
 import { MobileNav } from "@/components/MobileNav";
 import { PhotoCapture } from "@/components/PhotoCapture";
+import { KYCNotifications } from "@/components/KYCNotifications";
 
 interface DocumentData {
   documentNumber: string;
@@ -30,6 +45,15 @@ interface DocumentData {
   lastName: string;
   dateOfBirth: string;
   placeOfBirth: string;
+  nationality: string;
+  address: string;
+  phoneNumber: string;
+  email: string;
+  profession: string;
+}
+
+interface ValidationErrors {
+  [key: string]: string;
 }
 
 export default function KYCPage() {
@@ -49,17 +73,68 @@ export default function KYCPage() {
     firstName: "",
     lastName: "",
     dateOfBirth: "",
-    placeOfBirth: ""
+    placeOfBirth: "",
+    nationality: "",
+    address: "",
+    phoneNumber: "",
+    email: "",
+    profession: ""
   });
+
+  // New state for enhanced features
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+  const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
+  const [autoSuggestions, setAutoSuggestions] = useState<string[]>([]);
+  const [securityScore, setSecurityScore] = useState(0);
+
+  // Enhanced validation functions
+  const validateDocumentNumber = (docType: string, number: string): boolean => {
+    if (!number) return false;
+    if (docType === "cni") {
+      // CNI format validation (example for UEMOA countries)
+      return /^[A-Z]{2}\d{8}[A-Z]?$/.test(number.toUpperCase());
+    }
+    if (docType === "passport") {
+      // Passport format validation
+      return /^[A-Z]{1,2}\d{6,8}$/.test(number.toUpperCase());
+    }
+    return false;
+  };
+
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    return /^[\+]?[0-9]{8,15}$/.test(phone.replace(/\s/g, ''));
+  };
+
+  const calculateSecurityScore = (): number => {
+    let score = 0;
+    const data = documentData;
+    
+    if (data.documentNumber && validateDocumentNumber(documentType, data.documentNumber)) score += 20;
+    if (data.firstName && data.lastName) score += 15;
+    if (data.dateOfBirth) score += 10;
+    if (data.email && validateEmail(data.email)) score += 15;
+    if (data.phoneNumber && validatePhone(data.phoneNumber)) score += 10;
+    if (data.address) score += 10;
+    if (data.nationality) score += 10;
+    if (data.profession) score += 10;
+    
+    return Math.min(score, 100);
+  };
 
   // Calculate completion status based on document selection and steps
   const getCompletionPercentage = () => {
     let percentage = 0;
-    if (documentType) percentage += 25; // Document type selected
-    if (currentStep >= 2) percentage += 25; // Information filled
-    if (currentStep >= 3) percentage += 25; // Ready to capture
-    // The remaining 25% will be added when photos are actually captured and uploaded
-    return percentage;
+    if (documentType) percentage += 20; // Document type selected
+    if (currentStep >= 2) percentage += 20; // Information filled
+    if (currentStep >= 3) percentage += 20; // Ready to capture
+    
+    // Add bonus for data quality
+    const securityBonus = Math.floor(calculateSecurityScore() * 0.4);
+    return Math.min(percentage + securityBonus, 100);
   };
 
   const mockKycStatus = {
@@ -124,7 +199,12 @@ export default function KYCPage() {
         firstName: "",
         lastName: "",
         dateOfBirth: "",
-        placeOfBirth: ""
+        placeOfBirth: "",
+        nationality: "",
+        address: "",
+        phoneNumber: "",
+        email: "",
+        profession: ""
       });
     },
     onError: (error) => {
@@ -135,6 +215,69 @@ export default function KYCPage() {
       });
     }
   });
+
+  const handleDocumentDataChange = (field: keyof DocumentData, value: string) => {
+    setDocumentData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Real-time validation
+    const errors = { ...validationErrors };
+    
+    switch (field) {
+      case 'documentNumber':
+        if (value && !validateDocumentNumber(documentType, value)) {
+          errors[field] = documentType === 'cni' 
+            ? 'Format CNI invalide (ex: CI12345678A)' 
+            : 'Format passeport invalide (ex: A1234567)';
+        } else {
+          delete errors[field];
+        }
+        break;
+      case 'email':
+        if (value && !validateEmail(value)) {
+          errors[field] = 'Format email invalide';
+        } else {
+          delete errors[field];
+        }
+        break;
+      case 'phoneNumber':
+        if (value && !validatePhone(value)) {
+          errors[field] = 'Numéro de téléphone invalide';
+        } else {
+          delete errors[field];
+        }
+        break;
+      case 'firstName':
+      case 'lastName':
+        if (value && value.length < 2) {
+          errors[field] = 'Minimum 2 caractères requis';
+        } else {
+          delete errors[field];
+        }
+        break;
+    }
+    
+    setValidationErrors(errors);
+    setSecurityScore(calculateSecurityScore());
+  };
+
+  // Auto-suggestions based on document type
+  const getNationalitySuggestions = () => {
+    return [
+      "Ivoirienne", "Sénégalaise", "Malienne", "Burkinabé", 
+      "Nigérienne", "Béninoise", "Togolaise", "Guinéenne"
+    ];
+  };
+
+  const getProfessionSuggestions = () => {
+    return [
+      "Étudiant(e)", "Fonctionnaire", "Commerçant(e)", "Agriculteur/trice",
+      "Enseignant(e)", "Infirmier/ère", "Chauffeur", "Artisan(e)",
+      "Entrepreneur(e)", "Technicien(ne)", "Employé(e) de bureau"
+    ];
+  };
 
   const handleDocumentTypeSelection = (type: "cni" | "passport") => {
     setDocumentType(type);
@@ -237,6 +380,14 @@ export default function KYCPage() {
         </div>
 
         <div className="p-6 space-y-6 pb-24">
+          {/* Smart Notifications */}
+          <KYCNotifications
+            securityScore={securityScore}
+            currentStep={currentStep}
+            documentType={documentType}
+            validationErrors={validationErrors}
+          />
+
           {/* Progress Card */}
           <Card className="shadow-sm">
             <CardContent className="p-6">
@@ -463,88 +614,270 @@ export default function KYCPage() {
                   Saisissez les informations de votre {documentType === "cni" ? "CNI" : "passeport"} avant de le photographier.
                 </p>
 
+                {/* Security Score Card */}
+                <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200 mb-4">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Shield className="text-green-600" size={16} />
+                        <span className="text-sm font-medium text-green-800">Score de sécurité KYC</span>
+                      </div>
+                      <Badge className={`${securityScore >= 80 ? 'bg-green-500' : 
+                        securityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'} text-white`}>
+                        {securityScore}%
+                      </Badge>
+                    </div>
+                    <Progress value={securityScore} className="h-2 mb-2" />
+                    <p className="text-xs text-gray-600">
+                      {securityScore >= 80 ? "Excellent - Profil très sécurisé" : 
+                       securityScore >= 60 ? "Bon - Quelques améliorations possibles" : 
+                       "À améliorer - Complétez plus d'informations"}
+                    </p>
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 gap-4">
+                  {/* Document Number with enhanced validation */}
                   <div>
-                    <Label htmlFor="documentNumber">
-                      Numéro de {documentType === "cni" ? "CNI" : "passeport"}
+                    <Label htmlFor="documentNumber" className="flex items-center space-x-2">
+                      <CreditCard size={14} />
+                      <span>Numéro de {documentType === "cni" ? "CNI" : "passeport"}</span>
+                      {documentData.documentNumber && validateDocumentNumber(documentType, documentData.documentNumber) && (
+                        <CheckCircle className="text-green-500" size={14} />
+                      )}
                     </Label>
-                    <Input
-                      id="documentNumber"
-                      value={documentData.documentNumber}
-                      onChange={(e) => setDocumentData(prev => ({
-                        ...prev,
-                        documentNumber: e.target.value
-                      }))}
-                      placeholder={documentType === "cni" ? "Ex: CI2023123456" : "Ex: 23PA12345"}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="documentNumber"
+                        value={documentData.documentNumber}
+                        onChange={(e) => handleDocumentDataChange("documentNumber", e.target.value)}
+                        placeholder={documentType === "cni" ? "Ex: CI12345678A" : "Ex: A1234567"}
+                        className={validationErrors.documentNumber ? "border-red-300 bg-red-50" : 
+                          documentData.documentNumber && validateDocumentNumber(documentType, documentData.documentNumber) ? 
+                          "border-green-300 bg-green-50" : ""}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
+                          className="h-5 w-5 p-0"
+                        >
+                          {showSensitiveInfo ? <EyeOff size={12} /> : <Eye size={12} />}
+                        </Button>
+                      </div>
+                    </div>
+                    {validationErrors.documentNumber && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center space-x-1">
+                        <AlertCircle size={12} />
+                        <span>{validationErrors.documentNumber}</span>
+                      </p>
+                    )}
                   </div>
 
+                  {/* Expiry Date with validation */}
                   <div>
-                    <Label htmlFor="expiryDate">Date d'expiration</Label>
+                    <Label htmlFor="expiryDate" className="flex items-center space-x-2">
+                      <Calendar size={14} />
+                      <span>Date d'expiration</span>
+                    </Label>
                     <Input
                       id="expiryDate"
                       type="date"
                       value={documentData.expiryDate}
-                      onChange={(e) => setDocumentData(prev => ({
-                        ...prev,
-                        expiryDate: e.target.value
-                      }))}
+                      onChange={(e) => handleDocumentDataChange("expiryDate", e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
                     />
+                    {documentData.expiryDate && new Date(documentData.expiryDate) < new Date() && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center space-x-1">
+                        <AlertCircle size={12} />
+                        <span>Document expiré - Veuillez renouveler votre document</span>
+                      </p>
+                    )}
                   </div>
 
+                  {/* Names with real-time validation */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="firstName">Prénom(s)</Label>
+                      <Label htmlFor="firstName" className="flex items-center space-x-2">
+                        <User size={14} />
+                        <span>Prénom(s)</span>
+                      </Label>
                       <Input
                         id="firstName"
                         value={documentData.firstName}
-                        onChange={(e) => setDocumentData(prev => ({
-                          ...prev,
-                          firstName: e.target.value
-                        }))}
+                        onChange={(e) => handleDocumentDataChange("firstName", e.target.value)}
                         placeholder="Ex: Jean Pierre"
+                        className={validationErrors.firstName ? "border-red-300" : 
+                          documentData.firstName.length >= 2 ? "border-green-300" : ""}
                       />
+                      {validationErrors.firstName && (
+                        <p className="text-xs text-red-600 mt-1">{validationErrors.firstName}</p>
+                      )}
                     </div>
                     <div>
-                      <Label htmlFor="lastName">Nom de famille</Label>
+                      <Label htmlFor="lastName" className="flex items-center space-x-2">
+                        <User size={14} />
+                        <span>Nom de famille</span>
+                      </Label>
                       <Input
                         id="lastName"
                         value={documentData.lastName}
-                        onChange={(e) => setDocumentData(prev => ({
-                          ...prev,
-                          lastName: e.target.value
-                        }))}
+                        onChange={(e) => handleDocumentDataChange("lastName", e.target.value)}
                         placeholder="Ex: KOUASSI"
+                        className={validationErrors.lastName ? "border-red-300" : 
+                          documentData.lastName.length >= 2 ? "border-green-300" : ""}
+                      />
+                      {validationErrors.lastName && (
+                        <p className="text-xs text-red-600 mt-1">{validationErrors.lastName}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Birth Information */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="dateOfBirth" className="flex items-center space-x-2">
+                        <Calendar size={14} />
+                        <span>Date de naissance</span>
+                      </Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={documentData.dateOfBirth}
+                        onChange={(e) => handleDocumentDataChange("dateOfBirth", e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="placeOfBirth" className="flex items-center space-x-2">
+                        <MapPin size={14} />
+                        <span>Lieu de naissance</span>
+                      </Label>
+                      <Input
+                        id="placeOfBirth"
+                        value={documentData.placeOfBirth}
+                        onChange={(e) => handleDocumentDataChange("placeOfBirth", e.target.value)}
+                        placeholder="Ex: Abidjan, Côte d'Ivoire"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="dateOfBirth">Date de naissance</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={documentData.dateOfBirth}
-                      onChange={(e) => setDocumentData(prev => ({
-                        ...prev,
-                        dateOfBirth: e.target.value
-                      }))}
-                    />
-                  </div>
+                  {/* Additional Information */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="nationality" className="flex items-center space-x-2">
+                        <Award size={14} />
+                        <span>Nationalité</span>
+                      </Label>
+                      <Select 
+                        value={documentData.nationality} 
+                        onValueChange={(value) => handleDocumentDataChange("nationality", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez votre nationalité" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getNationalitySuggestions().map((nat) => (
+                            <SelectItem key={nat} value={nat}>{nat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div>
-                    <Label htmlFor="placeOfBirth">Lieu de naissance</Label>
-                    <Input
-                      id="placeOfBirth"
-                      value={documentData.placeOfBirth}
-                      onChange={(e) => setDocumentData(prev => ({
-                        ...prev,
-                        placeOfBirth: e.target.value
-                      }))}
-                      placeholder="Ex: Abidjan, Côte d'Ivoire"
-                    />
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="email" className="flex items-center space-x-2">
+                          <Mail size={14} />
+                          <span>Email</span>
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="votre@email.com"
+                          value={documentData.email}
+                          onChange={(e) => handleDocumentDataChange("email", e.target.value)}
+                          className={validationErrors.email ? "border-red-300" : 
+                            documentData.email && validateEmail(documentData.email) ? "border-green-300" : ""}
+                        />
+                        {validationErrors.email && (
+                          <p className="text-xs text-red-600 mt-1">{validationErrors.email}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phoneNumber" className="flex items-center space-x-2">
+                          <Phone size={14} />
+                          <span>Téléphone</span>
+                        </Label>
+                        <Input
+                          id="phoneNumber"
+                          placeholder="+225 XX XX XX XX XX"
+                          value={documentData.phoneNumber}
+                          onChange={(e) => handleDocumentDataChange("phoneNumber", e.target.value)}
+                          className={validationErrors.phoneNumber ? "border-red-300" : 
+                            documentData.phoneNumber && validatePhone(documentData.phoneNumber) ? "border-green-300" : ""}
+                        />
+                        {validationErrors.phoneNumber && (
+                          <p className="text-xs text-red-600 mt-1">{validationErrors.phoneNumber}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="address" className="flex items-center space-x-2">
+                        <Home size={14} />
+                        <span>Adresse complète</span>
+                      </Label>
+                      <Textarea
+                        id="address"
+                        placeholder="Rue, Quartier, Commune, Ville"
+                        value={documentData.address}
+                        onChange={(e) => handleDocumentDataChange("address", e.target.value)}
+                        rows={2}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="profession" className="flex items-center space-x-2">
+                        <Award size={14} />
+                        <span>Profession</span>
+                      </Label>
+                      <Select 
+                        value={documentData.profession} 
+                        onValueChange={(value) => handleDocumentDataChange("profession", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez votre profession" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getProfessionSuggestions().map((prof) => (
+                            <SelectItem key={prof} value={prof}>{prof}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
+
+                {/* Smart Tips */}
+                {securityScore < 80 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Lightbulb className="text-blue-600" size={16} />
+                      <p className="text-sm text-blue-800 font-medium">
+                        Améliorez votre score de sécurité :
+                      </p>
+                    </div>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      {!documentData.email && <li>• Ajoutez votre email pour +15 points</li>}
+                      {!documentData.phoneNumber && <li>• Renseignez votre téléphone pour +10 points</li>}
+                      {!documentData.address && <li>• Complétez votre adresse pour +10 points</li>}
+                      {!documentData.profession && <li>• Sélectionnez votre profession pour +10 points</li>}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="flex space-x-2">
                   <Button
@@ -557,9 +890,11 @@ export default function KYCPage() {
                   <Button
                     onClick={() => setCurrentStep(3)}
                     className="flex-1"
-                    disabled={!documentData.documentNumber || !documentData.expiryDate}
+                    disabled={!documentData.documentNumber || !documentData.expiryDate || 
+                      !documentData.firstName || !documentData.lastName || 
+                      Object.keys(validationErrors).length > 0}
                   >
-                    Continuer
+                    Continuer ({securityScore}% sécurisé)
                   </Button>
                 </div>
               </CardContent>
