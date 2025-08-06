@@ -1,11 +1,14 @@
 import { Link, useLocation } from "wouter";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/lib/i18n";
 import { 
   Home, 
   CreditCard, 
   ArrowLeftRight, 
   BarChart3, 
   User,
-  QrCode
+  QrCode,
+  Globe
 } from "lucide-react";
 
 interface MobileNavProps {
@@ -14,36 +17,37 @@ interface MobileNavProps {
 
 export function MobileNav({ currentPage }: MobileNavProps) {
   const [location] = useLocation();
+  const { t } = useLanguage();
 
   const navItems = [
     {
       href: "/",
       icon: Home,
-      label: "Accueil",
+      label: t('dashboard'),
       active: location === "/" || currentPage === "dashboard"
     },
     {
       href: "/cards",
       icon: CreditCard,
-      label: "Cartes",
+      label: t('cards'),
       active: location === "/cards" || currentPage === "cards"
     },
     {
       href: "/transfer",
       icon: ArrowLeftRight,
-      label: "Virement",
+      label: t('transfer'),
       active: location === "/transfer" || currentPage === "transfer"
     },
     {
       href: "/analytics",
       icon: BarChart3,
-      label: "Analytics",
+      label: t('analytics'),
       active: location === "/analytics" || currentPage === "analytics"
     },
     {
       href: "/profile",
       icon: User,
-      label: "Profil",
+      label: t('profile'),
       active: location === "/profile" || location === "/kyc" || currentPage === "profile"
     }
   ];
@@ -51,6 +55,11 @@ export function MobileNav({ currentPage }: MobileNavProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
       <div className="max-w-md mx-auto">
+        {/* Language Switcher Header */}
+        <div className="px-4 py-2 border-b border-gray-100">
+          <LanguageSwitcher variant="mobile" showLabel={false} />
+        </div>
+        
         <div className="flex">
           {navItems.map((item) => {
             const Icon = item.icon;

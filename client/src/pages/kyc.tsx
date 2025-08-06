@@ -37,6 +37,8 @@ import {
 import { MobileNav } from "@/components/MobileNav";
 import { PhotoCapture } from "@/components/PhotoCapture";
 import { KYCNotifications } from "@/components/KYCNotifications";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/lib/i18n";
 
 interface DocumentData {
   documentNumber: string;
@@ -59,6 +61,7 @@ interface ValidationErrors {
 export default function KYCPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t, language } = useLanguage();
   
   // State for photo capture
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
@@ -373,9 +376,12 @@ export default function KYCPage() {
       <div className="max-w-md mx-auto bg-white min-h-screen">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-500 to-blue-600 px-6 py-8 text-white">
-          <h1 className="text-2xl font-bold mb-2">Vérification d'identité</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">{t('identity_verification')}</h1>
+            <LanguageSwitcher variant="compact" />
+          </div>
           <p className="text-white/90 text-sm">
-            Complétez votre KYC pour débloquer toutes les fonctionnalités
+            {t('kyc_description')}
           </p>
         </div>
 
@@ -392,9 +398,9 @@ export default function KYCPage() {
           <Card className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">Progression KYC</h3>
+                <h3 className="text-lg font-semibold text-gray-900">{t('kyc_progress')}</h3>
                 <Badge className={`${mockKycStatus.completionPercentage > 0 ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-400'}`}>
-                  {mockKycStatus.completionPercentage}% terminé
+                  {mockKycStatus.completionPercentage}% {language === 'fr' ? 'terminé' : language === 'en' ? 'complete' : language === 'es' ? 'completo' : 'مكتمل'}
                 </Badge>
               </div>
               
@@ -403,19 +409,19 @@ export default function KYCPage() {
               <div className="space-y-2 text-sm">
                 <div className={`flex items-center space-x-2 ${documentType ? 'text-green-600' : 'text-gray-400'}`}>
                   {documentType ? <CheckCircle size={16} /> : <Clock size={16} />}
-                  <span>Sélection du document d'identité</span>
+                  <span>{t('document_selection')}</span>
                 </div>
                 <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-green-600' : 'text-gray-400'}`}>
                   {currentStep >= 2 ? <CheckCircle size={16} /> : <Clock size={16} />}
-                  <span>Saisie des informations</span>
+                  <span>{t('information_entry')}</span>
                 </div>
                 <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-green-600' : 'text-gray-400'}`}>
                   {currentStep >= 3 ? <CheckCircle size={16} /> : <Clock size={16} />}
-                  <span>Capture photo du document</span>
+                  <span>{t('document_capture')}</span>
                 </div>
                 <div className={`flex items-center space-x-2 text-gray-400`}>
                   <Clock size={16} />
-                  <span>Selfie avec document</span>
+                  <span>{t('selfie_capture')}</span>
                 </div>
               </div>
               
