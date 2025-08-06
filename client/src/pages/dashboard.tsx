@@ -124,7 +124,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-4 gap-4 mb-8">
             <Button
               variant="ghost"
-              onClick={() => setLocation('/transfer')}
+              onClick={() => setLocation('/instant-transfer')}
               className="flex flex-col items-center space-y-2 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 h-auto"
             >
               <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">

@@ -4,16 +4,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { ArrowLeft, User, Smartphone, Search, Send, Check } from "lucide-react";
+import { ArrowLeft, User, Smartphone, Search, Send, Check, Zap, Shield, Clock, RefreshCcw } from "lucide-react";
 import { useLocation } from "wouter";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import type { RegisteredOperator, MobileMoneyAccount } from "@shared/schema";
 
 const transferSchema = z.object({
   recipientPhone: z.string().min(8, "Numéro de téléphone requis"),
@@ -21,20 +23,22 @@ const transferSchema = z.object({
     message: "Le montant doit être supérieur à 0"
   }),
   description: z.string().optional(),
-  type: z.enum(['p2p', 'mobile_money']),
-  provider: z.string().optional(),
+  fromOperatorId: z.string().min(1, "Opérateur source requis"),
+  toOperatorId: z.string().min(1, "Opérateur destination requis"),
+  fromAccount: z.string().optional(),
+  toAccount: z.string().min(8, "Compte destinataire requis"),
 });
 
 type TransferForm = z.infer<typeof transferSchema>;
 
 export default function Transfer() {
   const [, setLocation] = useLocation();
-  const [transferType, setTransferType] = useState<'p2p' | 'mobile_money'>('p2p');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [mobileProvider, setMobileProvider] = useState<'orange_money' | 'wave'>('orange_money');
   const [pin, setPinValues] = useState(['', '', '', '']);
   const [transferResult, setTransferResult] = useState<any>(null);
+  const [selectedFromOperator, setSelectedFromOperator] = useState<RegisteredOperator | null>(null);
+  const [selectedToOperator, setSelectedToOperator] = useState<RegisteredOperator | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -45,8 +49,10 @@ export default function Transfer() {
       recipientPhone: '',
       amount: '',
       description: '',
-      type: 'p2p',
-      provider: undefined,
+      fromOperatorId: '',
+      toOperatorId: '',
+      fromAccount: '',
+      toAccount: '',
     },
   });
 
@@ -54,17 +60,28 @@ export default function Transfer() {
     queryKey: ["/api/contacts/frequent"],
   });
 
+  const { data: registeredOperators } = useQuery<RegisteredOperator[]>({
+    queryKey: ["/api/registered-operators"],
+  });
+
+  const { data: userMobileAccounts } = useQuery<MobileMoneyAccount[]>({
+    queryKey: ["/api/mobile-money-accounts"],
+  });
+
   const transferMutation = useMutation({
     mutationFn: async (data: TransferForm) => {
-      const response = await apiRequest('POST', '/api/transfer', data);
+      const response = await apiRequest('POST', '/api/instant-transfer', data);
       return response.json();
     },
     onSuccess: (data) => {
       setTransferResult(data);
       setShowConfirmation(false);
       setShowSuccess(true);
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/mobile-money-accounts"] });
+      }, 100);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {

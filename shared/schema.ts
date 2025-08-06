@@ -94,7 +94,55 @@ export const mobileMoneyAccounts = pgTable("mobile_money_accounts", {
   provider: varchar("provider").notNull(), // 'orange_money', 'wave', 'free_money'
   phoneNumber: varchar("phone_number").notNull(),
   accountName: varchar("account_name"),
+  balance: decimal("balance", { precision: 15, scale: 2 }).default("0.00"),
   isActive: boolean("is_active").default(true),
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Registered operators for instant transfers
+export const registeredOperators = pgTable("registered_operators", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(), // 'Orange Money', 'Wave', 'Free Money', 'IPCASH'
+  code: varchar("code").notNull().unique(), // 'OM', 'WAVE', 'FREE', 'IPCASH'
+  type: varchar("type").notNull(), // 'mobile_money', 'wallet', 'bank'
+  apiEndpoint: varchar("api_endpoint"),
+  isActive: boolean("is_active").default(true),
+  transferFee: decimal("transfer_fee", { precision: 5, scale: 2 }).default("0.00"),
+  maxTransferAmount: decimal("max_transfer_amount", { precision: 15, scale: 2 }).default("1000000.00"),
+  minTransferAmount: decimal("min_transfer_amount", { precision: 15, scale: 2 }).default("100.00"),
+  processingTime: varchar("processing_time").default("instant"), // 'instant', 'minutes', 'hours'
+  supportedCurrencies: text("supported_currencies").array().default(["FCFA"]),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Instant transfer records between operators
+export const instantTransfers = pgTable("instant_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transactionId: varchar("transaction_id").references(() => transactions.id).notNull(),
+  fromOperatorId: varchar("from_operator_id").references(() => registeredOperators.id).notNull(),
+  toOperatorId: varchar("to_operator_id").references(() => registeredOperators.id).notNull(),
+  fromAccount: varchar("from_account").notNull(), // Phone number or account ID
+  toAccount: varchar("to_account").notNull(), // Phone number or account ID
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
+  transferFee: decimal("transfer_fee", { precision: 15, scale: 2 }).default("0.00"),
+  exchangeRate: decimal("exchange_rate", { precision: 10, scale: 6 }).default("1.000000"),
+  status: varchar("status").default("pending"), // 'pending', 'processing', 'completed', 'failed'
+  externalTransactionId: varchar("external_transaction_id"), // Operator's transaction ID
+  errorMessage: text("error_message"),
+  processedAt: timestamp("processed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Operator API credentials (encrypted)
+export const operatorCredentials = pgTable("operator_credentials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  operatorId: varchar("operator_id").references(() => registeredOperators.id).notNull(),
+  credentialType: varchar("credential_type").notNull(), // 'api_key', 'token', 'certificate'
+  credentialValue: text("credential_value").notNull(), // Encrypted value
+  environment: varchar("environment").default("sandbox"), // 'sandbox', 'production'
+  isActive: boolean("is_active").default(true),
+  expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -380,19 +428,45 @@ export const insertBankingPartnerSchema = createInsertSchema(bankingPartners).om
   createdAt: true,
 });
 
+// Insert schemas for new tables
+export const insertRegisteredOperatorSchema = createInsertSchema(registeredOperators).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertInstantTransferSchema = createInsertSchema(instantTransfers).omit({
+  id: true,
+  createdAt: true,
+  processedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Account types
 export type Account = typeof accounts.$inferSelect;
-export type InsertAccount = z.infer<typeof insertAccountSchema>;
+export type InsertAccount = typeof accounts.$inferInsert;
+
+// Transaction types
 export type Transaction = typeof transactions.$inferSelect;
-export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+// Mobile Money Account types
+export type MobileMoneyAccount = typeof mobileMoneyAccounts.$inferSelect;
+export type InsertMobileMoneyAccount = typeof mobileMoneyAccounts.$inferInsert;
+
+// Registered Operator types
+export type RegisteredOperator = typeof registeredOperators.$inferSelect;
+export type InsertRegisteredOperator = typeof registeredOperators.$inferInsert;
+
+// Instant Transfer types
+export type InstantTransfer = typeof instantTransfers.$inferSelect;
+export type InsertInstantTransfer = typeof instantTransfers.$inferInsert;
+
+// Additional types
 export type Card = typeof cards.$inferSelect;
 export type InsertCard = z.infer<typeof insertCardSchema>;
-export type MobileMoneyAccount = typeof mobileMoneyAccounts.$inferSelect;
-export type InsertMobileMoneyAccount = z.infer<typeof insertMobileMoneyAccountSchema>;
-export type Contact = typeof contacts.$inferSelect;
-export type InsertContact = z.infer<typeof insertContactSchema>;
 export type KycDocument = typeof kycDocuments.$inferSelect;
 export type InsertKycDocument = z.infer<typeof insertKycDocumentSchema>;
 export type SavingsGoal = typeof savingsGoals.$inferSelect;

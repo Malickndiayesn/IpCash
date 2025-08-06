@@ -620,6 +620,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Get registered operators
+  app.get("/api/registered-operators", async (req, res) => {
+    try {
+      const operators = await storage.getRegisteredOperators();
+      res.json(operators);
+    } catch (error) {
+      console.error("Error fetching registered operators:", error);
+      res.status(500).json({ message: "Failed to fetch operators" });
+    }
+  });
+
+  // Get user's mobile money accounts
+  app.get("/api/mobile-money-accounts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const accounts = await storage.getUserMobileMoneyAccounts(userId);
+      res.json(accounts);
+    } catch (error) {
+      console.error("Error fetching mobile money accounts:", error);
+      res.status(500).json({ message: "Failed to fetch mobile money accounts" });
+    }
+  });
+
+  // Create instant transfer
+  app.post("/api/instant-transfer", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { 
+        fromOperatorId, 
+        toOperatorId, 
+        toAccount, 
+        amount, 
+        description,
+        fromAccount 
+      } = req.body;
+
+      if (!fromOperatorId || !toOperatorId || !toAccount || !amount) {
+        return res.status(400).json({ 
+          message: "Missing required fields" 
+        });
+      }
+
+      const numericAmount = parseFloat(amount);
+      if (numericAmount <= 0) {
+        return res.status(400).json({ 
+          message: "Invalid amount" 
+        });
+      }
+
+      // Get operators
+      const fromOperator = await storage.getRegisteredOperator(fromOperatorId);
+      const toOperator = await storage.getRegisteredOperator(toOperatorId);
+
+      if (!fromOperator || !toOperator) {
+        return res.status(400).json({ 
+          message: "Invalid operators" 
+        });
+      }
+
+      // Validate amount limits
+      if (numericAmount < parseFloat(fromOperator.minTransferAmount) || 
+          numericAmount > parseFloat(fromOperator.maxTransferAmount)) {
+        return res.status(400).json({ 
+          message: `Amount must be between ${fromOperator.minTransferAmount} and ${fromOperator.maxTransferAmount} FCFA for ${fromOperator.name}` 
+        });
+      }
+
+      // Calculate fees
+      const fromFee = parseFloat(fromOperator.transferFee || "0");
+      const toFee = parseFloat(toOperator.transferFee || "0");
+      const totalFee = (numericAmount * (fromFee + toFee) / 100);
+
+      // Create main transaction
+      const transactionData = {
+        fromUserId: userId,
+        toUserId: null, // Will be resolved later
+        amount: amount,
+        currency: "FCFA",
+        type: "instant_transfer",
+        status: "processing",
+        description: description || `Transfert ${fromOperator.name} → ${toOperator.name}`,
+        fees: totalFee.toString(),
+        metadata: {
+          fromOperator: fromOperator.name,
+          toOperator: toOperator.name,
+          fromAccount: fromAccount || "N/A",
+          toAccount: toAccount,
+          instantTransfer: true
+        }
+      };
+
+      const transaction = await storage.createTransaction(transactionData);
+
+      // Create instant transfer record
+      const instantTransferData = {
+        transactionId: transaction.id,
+        fromOperatorId: fromOperatorId,
+        toOperatorId: toOperatorId,
+        fromAccount: fromAccount || userId,
+        toAccount: toAccount,
+        amount: amount,
+        transferFee: totalFee.toString(),
+        status: "processing"
+      };
+
+      const instantTransfer = await storage.createInstantTransfer(instantTransferData);
+
+      // Simulate instant processing (in real implementation, this would call operator APIs)
+      setTimeout(async () => {
+        try {
+          await storage.updateInstantTransferStatus(instantTransfer.id, "completed");
+          await storage.updateTransactionStatus(transaction.id, "completed");
+        } catch (error) {
+          console.error("Error updating transfer status:", error);
+        }
+      }, 2000);
+
+      res.json({
+        success: true,
+        transaction: transaction,
+        instantTransfer: instantTransfer,
+        message: "Transfert instantané initié avec succès",
+        reference: transaction.reference || transaction.id,
+        amount: amount,
+        fees: totalFee.toFixed(2),
+        estimatedCompletion: "2-5 secondes"
+      });
+
+    } catch (error) {
+      console.error("Error processing instant transfer:", error);
+      res.status(500).json({ message: "Failed to process instant transfer" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

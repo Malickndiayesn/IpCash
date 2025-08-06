@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, Send, CreditCard, User, TrendingUp, PiggyBank, Brain, MessageCircle } from "lucide-react";
+import { Home, List, Send, CreditCard, User, TrendingUp, PiggyBank, Brain, MessageCircle, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 
 interface MobileNavProps {
@@ -24,9 +24,9 @@ export function MobileNav({ currentPage }: MobileNavProps) {
     },
     {
       key: 'transfer',
-      icon: Send,
-      label: 'Envoyer',
-      path: '/transfer',
+      icon: Zap,
+      label: 'Transfert',
+      path: '/instant-transfer',
     },
     {
       key: 'cards',

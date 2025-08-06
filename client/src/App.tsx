@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Transfer from "@/pages/transfer";
+import InstantTransfer from "@/pages/instant-transfer";
 import Transactions from "@/pages/transactions";
 import Cards from "@/pages/cards";
 import Profile from "@/pages/profile";
@@ -32,6 +33,7 @@ function Router() {
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/transfer" component={Transfer} />
+          <Route path="/instant-transfer" component={InstantTransfer} />
           <Route path="/transactions" component={Transactions} />
           <Route path="/cards" component={Cards} />
           <Route path="/profile" component={Profile} />

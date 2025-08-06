@@ -5,6 +5,8 @@ import {
   cards,
   mobileMoneyAccounts,
   contacts,
+  registeredOperators,
+  instantTransfers,
   type User,
   type UpsertUser,
   type Account,
@@ -17,6 +19,10 @@ import {
   type InsertMobileMoneyAccount,
   type Contact,
   type InsertContact,
+  type RegisteredOperator,
+  type InsertRegisteredOperator,
+  type InstantTransfer,
+  type InsertInstantTransfer,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, sql } from "drizzle-orm";
@@ -52,6 +58,14 @@ export interface IStorage {
   getUserContacts(userId: string): Promise<Contact[]>;
   createContact(contact: InsertContact): Promise<Contact>;
   getFrequentContacts(userId: string): Promise<Contact[]>;
+  
+  // Registered Operator operations
+  getRegisteredOperators(): Promise<RegisteredOperator[]>;
+  getRegisteredOperator(id: string): Promise<RegisteredOperator | undefined>;
+  
+  // Instant Transfer operations
+  createInstantTransfer(data: InsertInstantTransfer): Promise<InstantTransfer>;
+  updateInstantTransferStatus(id: string, status: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -203,6 +217,85 @@ export class DatabaseStorage implements IStorage {
       .from(contacts)
       .where(and(eq(contacts.userId, userId), eq(contacts.isFrequent, true)))
       .limit(10);
+  }
+
+  // Registered Operators operations
+  async getRegisteredOperators(): Promise<RegisteredOperator[]> {
+    const operators = await db.select().from(registeredOperators).where(eq(registeredOperators.isActive, true));
+    
+    // If no operators in DB, return default ones
+    if (operators.length === 0) {
+      return [
+        {
+          id: "ipcash-wallet",
+          name: "IPCASH Wallet",
+          code: "IPCASH",
+          type: "wallet",
+          apiEndpoint: null,
+          isActive: true,
+          transferFee: "0.5",
+          maxTransferAmount: "1000000.00",
+          minTransferAmount: "100.00",
+          processingTime: "instant",
+          supportedCurrencies: ["FCFA", "USD", "EUR"],
+          createdAt: new Date()
+        },
+        {
+          id: "orange-money",
+          name: "Orange Money",
+          code: "OM",
+          type: "mobile_money",
+          apiEndpoint: "https://api.orange.sn/money",
+          isActive: true,
+          transferFee: "1.0",
+          maxTransferAmount: "500000.00",
+          minTransferAmount: "100.00",
+          processingTime: "instant",
+          supportedCurrencies: ["FCFA"],
+          createdAt: new Date()
+        },
+        {
+          id: "wave-senegal",
+          name: "Wave",
+          code: "WAVE",
+          type: "mobile_money",
+          apiEndpoint: "https://api.wave.com/v1",
+          isActive: true,
+          transferFee: "0.0",
+          maxTransferAmount: "1000000.00",
+          minTransferAmount: "50.00",
+          processingTime: "instant",
+          supportedCurrencies: ["FCFA"],
+          createdAt: new Date()
+        }
+      ];
+    }
+    
+    return operators;
+  }
+
+  async getRegisteredOperator(id: string): Promise<RegisteredOperator | undefined> {
+    const operators = await this.getRegisteredOperators();
+    return operators.find(op => op.id === id);
+  }
+
+  // Instant Transfer operations
+  async createInstantTransfer(data: InsertInstantTransfer): Promise<InstantTransfer> {
+    const [instantTransfer] = await db
+      .insert(instantTransfers)
+      .values(data)
+      .returning();
+    return instantTransfer;
+  }
+
+  async updateInstantTransferStatus(id: string, status: string): Promise<void> {
+    await db
+      .update(instantTransfers)
+      .set({ 
+        status, 
+        processedAt: status === "completed" ? new Date() : null 
+      })
+      .where(eq(instantTransfers.id, id));
   }
 }
 
