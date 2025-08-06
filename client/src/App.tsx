@@ -22,6 +22,7 @@ import InternationalTransfer from "@/pages/international-transfer";
 import CurrencyExchange from "@/pages/currency-exchange";
 import MultiCurrency from "@/pages/multi-currency";
 import Recharge from "@/pages/recharge";
+import Notifications from "@/pages/notifications";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/currency-exchange" component={CurrencyExchange} />
           <Route path="/multi-currency" component={MultiCurrency} />
           <Route path="/recharge" component={Recharge} />
+          <Route path="/notifications" component={Notifications} />
         </>
       )}
       <Route component={NotFound} />

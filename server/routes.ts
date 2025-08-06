@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { ObjectStorageService } from "./objectStorage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -20,147 +19,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard route
-  app.get("/api/dashboard", isAuthenticated, async (req: any, res) => {
+  // Cards API
+  app.get("/api/cards", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const account = await storage.getUserAccount(userId);
-      res.json({ account });
+      const userId = req.user?.claims?.sub;
+      const cards = await storage.getUserCards(userId);
+      res.json(cards);
     } catch (error) {
-      console.error("Error fetching dashboard:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard data" });
+      console.error("Error fetching cards:", error);
+      res.status(500).json({ message: "Failed to fetch cards" });
     }
   });
 
-  // KYC routes
-  app.get("/api/kyc-status", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/cards/:cardId", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const kycDocuments = await storage.getKycDocuments(userId);
+      const { cardId } = req.params;
+      const { settings } = req.body;
+      const userId = req.user?.claims?.sub;
       
-      // Calculate completion percentage
-      const totalRequired = 3; // CNI/Passport, Selfie, Proof of address
-      const completed = kycDocuments.filter(doc => doc.status === 'approved').length;
-      const completionPercentage = Math.round((completed / totalRequired) * 100);
+      const card = await storage.updateCardSettings(cardId, userId, settings);
+      res.json(card);
+    } catch (error) {
+      console.error("Error updating card settings:", error);
+      res.status(500).json({ message: "Failed to update card settings" });
+    }
+  });
+
+  // Notifications API
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const notifications = await storage.getUserNotifications(userId);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.patch("/api/notifications/:notificationId/read", isAuthenticated, async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const userId = req.user?.claims?.sub;
       
-      res.json({
-        status: completed === totalRequired ? 'approved' : 
-                kycDocuments.some(doc => doc.status === 'pending') ? 'pending' : 'none',
-        completionPercentage,
-        documents: kycDocuments
-      });
+      await storage.markNotificationAsRead(notificationId, userId);
+      res.json({ success: true });
     } catch (error) {
-      console.error("Error fetching KYC status:", error);
-      res.status(500).json({ message: "Failed to fetch KYC status" });
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 
-  app.post("/api/kyc-documents/upload", isAuthenticated, async (req: any, res) => {
+  app.patch("/api/notifications/read-all", isAuthenticated, async (req, res) => {
     try {
-      const documentType = req.query.type;
-      if (!documentType) {
-        return res.status(400).json({ error: "Document type is required" });
-      }
-
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getKycDocumentUploadURL(documentType);
+      const userId = req.user?.claims?.sub;
       
-      res.json({ uploadURL });
+      await storage.markAllNotificationsAsRead(userId);
+      res.json({ success: true });
     } catch (error) {
-      console.error("Error generating upload URL:", error);
-      res.status(500).json({ error: "Failed to generate upload URL" });
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "Failed to mark all notifications as read" });
     }
   });
 
-  app.post("/api/kyc-documents", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/notifications/:notificationId", isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const { documentType, documentUrl, documentNumber, expiryDate, firstName, lastName, dateOfBirth, placeOfBirth } = req.body;
-
-      const kycDocument = await storage.createKycDocument({
-        userId,
-        documentType,
-        documentUrl,
-        documentNumber,
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
-        extractedData: {
-          firstName,
-          lastName,
-          dateOfBirth,
-          placeOfBirth
-        }
-      });
-
-      res.json(kycDocument);
-    } catch (error) {
-      console.error("Error creating KYC document:", error);
-      res.status(500).json({ error: "Failed to create KYC document" });
-    }
-  });
-
-  // Registered operators
-  app.get("/api/registered-operators", async (req, res) => {
-    try {
-      const operators = await storage.getRegisteredOperators();
-      res.json(operators);
-    } catch (error) {
-      console.error("Error fetching operators:", error);
-      res.status(500).json({ message: "Failed to fetch operators" });
-    }
-  });
-
-  // Instant transfers
-  app.post("/api/instant-transfers", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const transferData = req.body;
+      const { notificationId } = req.params;
+      const userId = req.user?.claims?.sub;
       
-      const transfer = await storage.createInstantTransfer({
-        ...transferData,
-        userId,
-        status: "pending"
-      });
-
-      res.json(transfer);
+      await storage.deleteNotification(notificationId, userId);
+      res.json({ success: true });
     } catch (error) {
-      console.error("Error creating instant transfer:", error);
-      res.status(500).json({ message: "Failed to create transfer" });
-    }
-  });
-
-  // Transactions
-  app.get("/api/transactions", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const transactions = await storage.getUserTransactions(userId);
-      res.json(transactions);
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      res.status(500).json({ message: "Failed to fetch transactions" });
-    }
-  });
-
-  // Mobile money accounts
-  app.get("/api/mobile-money-accounts", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const accounts = await storage.getMobileMoneyAccounts(userId);
-      res.json(accounts);
-    } catch (error) {
-      console.error("Error fetching mobile money accounts:", error);
-      res.status(500).json({ message: "Failed to fetch mobile money accounts" });
-    }
-  });
-
-  // Frequent contacts
-  app.get("/api/contacts/frequent", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const contacts = await storage.getFrequentContacts(userId);
-      res.json(contacts);
-    } catch (error) {
-      console.error("Error fetching frequent contacts:", error);
-      res.status(500).json({ message: "Failed to fetch frequent contacts" });
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 

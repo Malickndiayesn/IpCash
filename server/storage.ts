@@ -73,6 +73,15 @@ export interface IStorage {
   
   // KYC operations
   getKycDocuments(userId: string): Promise<KycDocument[]>;
+  
+  // Notification operations  
+  getUserNotifications(userId: string): Promise<any[]>;
+  markNotificationAsRead(notificationId: string, userId: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(notificationId: string, userId: string): Promise<void>;
+  
+  // Enhanced Card operations
+  updateCardSettings(cardId: string, userId: string, settings: any): Promise<Card>;
   createKycDocument(document: InsertKycDocument): Promise<KycDocument>;
   updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument>;
 }
@@ -181,11 +190,59 @@ export class DatabaseStorage implements IStorage {
     return newCard;
   }
 
-  async updateCardSettings(cardId: string, settings: Partial<Card>): Promise<void> {
+  async updateCardSettings(cardId: string, userId: string, settings: any): Promise<Card> {
     await db
       .update(cards)
       .set(settings)
+      .where(and(eq(cards.id, cardId), eq(cards.userId, userId)));
+    
+    // Return updated card
+    const [updatedCard] = await db
+      .select()
+      .from(cards)
       .where(eq(cards.id, cardId));
+      
+    return updatedCard;
+  }
+
+  // Notification operations
+  async getUserNotifications(userId: string): Promise<any[]> {
+    // Mock implementation - return sample notifications
+    return [
+      {
+        id: "notif-1",
+        userId,
+        title: "Paiement reçu",
+        message: "Vous avez reçu 25,000 FCFA de Jean Dupont",
+        type: "payment",
+        isRead: false,
+        createdAt: new Date()
+      },
+      {
+        id: "notif-2", 
+        userId,
+        title: "Carte bloquée",
+        message: "Votre carte virtuelle a été temporairement bloquée",
+        type: "security",
+        isRead: true,
+        createdAt: new Date()
+      }
+    ];
+  }
+
+  async markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
+    // Mock implementation
+    console.log(`Marking notification ${notificationId} as read for user ${userId}`);
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    // Mock implementation  
+    console.log(`Marking all notifications as read for user ${userId}`);
+  }
+
+  async deleteNotification(notificationId: string, userId: string): Promise<void> {
+    // Mock implementation
+    console.log(`Deleting notification ${notificationId} for user ${userId}`);
   }
 
   // Mobile Money operations

@@ -500,31 +500,7 @@ export type InsertRegisteredOperator = z.infer<typeof insertRegisteredOperatorSc
 export type InstantTransfer = typeof instantTransfers.$inferSelect;
 export type InsertInstantTransfer = z.infer<typeof insertInstantTransferSchema>;
 
-// Account types
-export type Account = typeof accounts.$inferSelect;
-export type InsertAccount = typeof accounts.$inferInsert;
-
-// Transaction types
-export type Transaction = typeof transactions.$inferSelect;
-export type InsertTransaction = typeof transactions.$inferInsert;
-
-// Mobile Money Account types
-export type MobileMoneyAccount = typeof mobileMoneyAccounts.$inferSelect;
-export type InsertMobileMoneyAccount = typeof mobileMoneyAccounts.$inferInsert;
-
-// Registered Operator types
-export type RegisteredOperator = typeof registeredOperators.$inferSelect;
-export type InsertRegisteredOperator = typeof registeredOperators.$inferInsert;
-
-// Instant Transfer types
-export type InstantTransfer = typeof instantTransfers.$inferSelect;
-export type InsertInstantTransfer = typeof instantTransfers.$inferInsert;
-
 // Additional types
-export type Card = typeof cards.$inferSelect;
-export type InsertCard = z.infer<typeof insertCardSchema>;
-export type KycDocument = typeof kycDocuments.$inferSelect;
-export type InsertKycDocument = z.infer<typeof insertKycDocumentSchema>;
 export type SavingsGoal = typeof savingsGoals.$inferSelect;
 export type InsertSavingsGoal = z.infer<typeof insertSavingsGoalSchema>;
 export type CreditScore = typeof creditScore.$inferSelect;
