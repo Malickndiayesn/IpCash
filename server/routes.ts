@@ -276,7 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { id: 'eur-id', code: 'EUR', name: 'Euro', symbol: '€', exchangeRate: 655.957, isActive: true },
         { id: 'gbp-id', code: 'GBP', name: 'British Pound', symbol: '£', exchangeRate: 780.123, isActive: true },
         { id: 'cad-id', code: 'CAD', name: 'Canadian Dollar', symbol: 'C$', exchangeRate: 485.67, isActive: true },
-        { id: 'cny-id', code: 'CNY', name: 'Chinese Yuan', symbol: '¥', exchangeRate: 91.23, isActive: true }
+        { id: 'cny-id', code: 'CNY', name: 'Chinese Yuan', symbol: '¥', exchangeRate: 91.23, isActive: true },
+        { id: 'mad-id', code: 'MAD', name: 'Dirham marocain', symbol: 'MAD', exchangeRate: 66.15, isActive: true }
       ];
       res.json(currencies);
     } catch (error) {
@@ -311,6 +312,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'cny-id-fcfa-id': 91.23,      // 1 CNY = 91.23 FCFA
         'fcfa-id-cny-id': 0.010962,   // 1 FCFA = 0.010962 CNY
         
+        // MAD conversions (Dirham marocain)
+        'mad-id-fcfa-id': 66.15,      // 1 MAD = 66.15 FCFA
+        'fcfa-id-mad-id': 0.015118,   // 1 FCFA = 0.015118 MAD
+        
         // Cross currency rates
         'usd-id-eur-id': 1.0,         // 1 USD = 1.0 EUR (same rate in this example)
         'eur-id-usd-id': 1.0,         // 1 EUR = 1.0 USD
@@ -320,6 +325,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'cad-id-usd-id': 0.741,       // 1 CAD = 0.741 USD
         'usd-id-cny-id': 7.19,        // 1 USD = 7.19 CNY
         'cny-id-usd-id': 0.139,       // 1 CNY = 0.139 USD
+        'usd-id-mad-id': 9.92,        // 1 USD = 9.92 MAD
+        'mad-id-usd-id': 0.101,       // 1 MAD = 0.101 USD
+        'eur-id-mad-id': 10.85,       // 1 EUR = 10.85 MAD
+        'mad-id-eur-id': 0.092,       // 1 MAD = 0.092 EUR
       };
       
       let rate = 1;
@@ -350,6 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'gbp-id': 780.123,    // 1 GBP = 780.123 FCFA
         'cad-id': 485.67,     // 1 CAD = 485.67 FCFA 
         'cny-id': 91.23,      // 1 CNY = 91.23 FCFA
+        'mad-id': 66.15,      // 1 MAD = 66.15 FCFA
         'fcfa-id': 1          // 1 FCFA = 1 FCFA
       };
       res.json(rates);
@@ -379,6 +389,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currencyId: 'eur-id',
           balance: '850.50',
           accountNumber: '2345678901234567',
+          isDefault: false,
+          status: 'active'
+        },
+        {
+          id: 'account-3',
+          userId,
+          currencyId: 'gbp-id',
+          balance: '425.30',
+          accountNumber: '3456789012345678',
+          isDefault: false,
+          status: 'active'
+        },
+        {
+          id: 'account-4',
+          userId,
+          currencyId: 'cad-id',
+          balance: '975.80',
+          accountNumber: '4567890123456789',
+          isDefault: false,
+          status: 'active'
+        },
+        {
+          id: 'account-5',
+          userId,
+          currencyId: 'cny-id',
+          balance: '8750.25',
+          accountNumber: '5678901234567890',
+          isDefault: false,
+          status: 'active'
+        },
+        {
+          id: 'account-6',
+          userId,
+          currencyId: 'mad-id',
+          balance: '2150.00',
+          accountNumber: '6789012345678901',
           isDefault: false,
           status: 'active'
         }
