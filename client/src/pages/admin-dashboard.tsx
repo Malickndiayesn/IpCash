@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,8 +80,23 @@ interface KYCDocument {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const { isAuthenticated, isLoading } = useAuth();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedKYC, setSelectedKYC] = useState<KYCDocument | null>(null);
+
+  // Redirect to login if not authenticated
+  if (!isLoading && !isAuthenticated) {
+    window.location.href = '/api/login';
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Fetch admin stats
   const { data: stats, isLoading: statsLoading } = useQuery<AdminStats>({

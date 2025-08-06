@@ -473,10 +473,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateKycDocumentStatus(documentId: string, status: string, rejectionReason?: string): Promise<KycDocument> {
-    const updateData: any = { verificationStatus: status, updatedAt: new Date() };
-    if (rejectionReason) {
-      updateData.rejectionReason = rejectionReason;
-    }
+    const updateData: any = { 
+      verificationStatus: status, 
+      updatedAt: new Date(),
+      ...(rejectionReason && { rejectionReason })
+    };
     
     const [updated] = await db
       .update(kycDocuments)
