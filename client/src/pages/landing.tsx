@@ -111,12 +111,21 @@ export default function Landing() {
 
           {/* CTA */}
           <div className="space-y-4">
-            <Button 
-              onClick={handleLogin}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-4 rounded-xl text-lg transition-colors duration-200"
-            >
-              Se connecter avec Replit
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button 
+                onClick={handleLogin}
+                className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-4 rounded-xl text-lg transition-colors duration-200"
+              >
+                Se connecter
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/admin'}
+                variant="outline"
+                className="flex-1 border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold py-4 rounded-xl text-lg transition-colors duration-200"
+              >
+                Administration
+              </Button>
+            </div>
             
             <div className="text-center">
               <p className="text-sm text-gray-600">
